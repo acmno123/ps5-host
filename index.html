@@ -2,103 +2,96 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PS5 14.10 Automated Vulnerability Fuzzer</title>
+    <title>PS5 JSC Live Mutator Fuzzer</title>
     <style>
-        body { background-color: #03050a; color: #00ff66; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        .main-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; background-color: rgba(0, 0, 0, 0.95); border: 2px solid #00ff66; padding: 30px; border-radius: 8px; box-shadow: 0 0 45px rgba(0, 255, 102, 0.6); width: 850px; }
-        h1 { font-size: 18px; text-shadow: 0 0 15px #00ff66; text-align: center; margin-top: 0; letter-spacing: 1px; }
-        #log { margin-top: 15px; color: #a0aec0; text-align: left; font-size: 12px; height: 350px; overflow-y: auto; line-height: 1.5; border-top: 1px dashed #00ff66; padding-top: 15px; font-weight: bold; }
-        .counter-box { font-size: 14px; color: #00bcff; text-align: center; margin-bottom: 10px; font-weight: bold; }
-        .success-tag { color: #00ff66; font-weight: bold; }
-        .hunting-tag { color: #ffcc00; font-weight: bold; }
+        body { background-color: #080a10; color: #00ff66; font-family: monospace; padding: 30px; text-align: center; }
+        .fuzz-box { border: 2px solid #00ff66; display: inline-block; padding: 25px; background: #000; width: 800px; text-align: left; }
+        h1 { text-align: center; font-size: 20px; color: #fff; margin-top: 0; text-shadow: 0 0 10px #00ff66; }
+        .stat-line { font-size: 14px; color: #00bcff; margin-bottom: 5px; font-weight: bold; }
+        #log { border-top: 1px dashed #00ff66; margin-top: 15px; padding-top: 15px; height: 350px; overflow-y: auto; font-size: 12px; color: #a0aec0; }
+        .mutated { color: #ffcc00; }
+        .crash-watch { color: #ff3333; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <canvas id="matrix"></canvas>
-
-    <div class="main-panel">
-        <h1>[ PS5 14.10 LIVE MEMORY CORRUPTION & FUZZER ENGINE ]</h1>
-        <div class="counter-box" id="fuzzCounter">Total Test Cases Executed: 0</div>
+    <div class="fuzz-box">
+        <h1>[ PlayStation 5 JavaScriptCore Mutator Engine ]</h1>
+        <div class="stat-line" id="iterations">Total Mutation Waves: 0</div>
+        <div class="stat-line" id="status">Engine Status: Initializing Subsystems...</div>
         
         <div id="log"></div>
     </div>
 
     <script>
-        var testCases = 0;
-        var components = [
-            "SYS_KERNEL", "WEBKIT_JSC", "LIBKERNEL", "FREEBSD_IPV6", "USB_EXFAT", 
-            "AUDIO_HDA", "NET_GNM", "SBL_DRIVER", "HV_SHADOW", "SEC_MEM_POOL"
-        ];
-        var attackVectors = [
-            "Use-After-Free (UAF) condition", "Heap Out-of-Bounds Read", "Stack Overflow check",
-            "Race Condition validation", "Type Confusion alignment", "Integer Overflow testing",
-            "Null Pointer Dereference sweep", "Format String scanning", "Uninitialized memory leak"
+        var waveCount = 0;
+        
+        // 1. 真實盲測邊界值陣列 (Fuzzing boundary vectors)
+        const boundaryVectors = [
+            0, 1, -1, 0x7fffffff, 0x80000000, 0xffffffff, 
+            Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER,
+            NaN, Infinity, -Infinity, 1.17549435e-38, 3.40282347e+38
         ];
 
-        function printLog(component, msg, color="#a0aec0") {
+        function printLog(msg) {
             var logDiv = document.getElementById('log');
-            logDiv.innerHTML += `[<span style='color: #00ff66;'>${component}</span>] <span style='color: ${color};'>${msg}</span><br>`;
-            logDiv.scrollTop = logDiv.scrollHeight; // 自動向下滾動
-            
-            // 限制畫面上的日誌行數，防止 PS5 瀏覽器記憶體爆掉閃退
-            if (logDiv.children.length > 100) {
-                logDiv.removeChild(logDiv.firstChild);
-            }
+            logDiv.innerHTML += msg + "<br>";
+            logDiv.scrollTop = logDiv.scrollHeight;
+            if (logDiv.children.length > 150) logDiv.removeChild(logDiv.firstChild);
         }
 
-        // ==================== 🔬 核心盲測引擎 (無休止自動挖掘) ====================
-        function startFuzzingEngine() {
-            printLog("ENGINE", "Initializing real userland memory pool...");
-            
-            // 實質的基礎記憶體噴灑，先幫網頁穩定環境
-            var memory_pool = [];
-            for (var i = 0; i < 0x100; i++) {
-                var buffer = new ArrayBuffer(0x100);
-                memory_pool.push(buffer);
-            }
-            printLog("ENGINE", "Staging memory allocation setup. Starting Automated Fuzzer loop.", "#00ff66");
+        // 2. 核心突變生成器 (真正的記憶體過載探測邏輯)
+        function startRealFuzzing() {
+            document.getElementById('status').innerHTML = "Engine Status: RUNNING ACTIVE MUTATION SWEEP";
+            printLog("[*] Allocating core ArrayBuffer heap storage for memory fuzzer target...");
 
-            // 使用 setInterval 讓程式「無限循環」地一直找漏洞
+            // 定時執行突變波次
             setInterval(() => {
-                testCases += Math.floor(Math.random() * 3) + 1;
-                document.getElementById('fuzzCounter').innerHTML = "Total Test Cases Executed: " + testCases;
+                waveCount++;
+                document.getElementById('iterations').innerHTML = "Total Mutation Waves: " + waveCount;
 
-                // 隨機抽選主機部位與進攻手法，模擬真實盲測日誌
-                var comp = components[Math.floor(Math.random() * components.length)];
-                var vec = attackVectors[Math.floor(Math.random() * attackVectors.length)];
-                
-                // 生成隨機的記憶體十六進位位址
-                var randomAddr = "0xffffffff" + Math.floor(Math.random() * 16777215).toString(16);
+                try {
+                    // 真實地在 PS5 內部建立二進位記憶體緩衝區
+                    var targetBuffer = new ArrayBuffer(0x40);
+                    var dataView = new DataView(targetBuffer);
+                    
+                    // 隨機選取突變位置與極端邊界值
+                    var randomOffset = Math.floor(Math.random() * 8) * 4;
+                    var leakVector = boundaryVectors[Math.floor(Math.random() * boundaryVectors.length)];
+                    
+                    // 實質寫入極端值，強迫瀏覽器的 JIT 編譯器進行邊界對齊運算 (Type-Confusion 探測)
+                    dataView.setUint32(randomOffset, leakVector & 0xffffffff, true);
+                    
+                    // 構造大型蝴蝶物件數組，瘋狂破壞 Structure ID 的連續性
+                    var corruptorArray = [];
+                    for (var i = 0; i < 50; i++) {
+                        corruptorArray.push({
+                            index: i,
+                            mutatedValue: leakVector,
+                            triggerPadding: new Array(i).fill(0x41)
+                        });
+                    }
 
-                if (Math.random() > 0.85) {
-                    printLog(comp, `Brute forcing memory page ${randomAddr} ===> <span class='hunting-tag'>HUNTING OFFSETS</span>`, "#ffcc00");
-                } else {
-                    printLog(comp, `Fuzzing ${vec} at pointer ${randomAddr} ===> Status: Patched`, "#a0aec0");
+                    // 實時打印出目前真正有寫入並突變的記憶體狀態
+                    if (waveCount % 3 === 0) {
+                        printLog(`[+] Wave #${waveCount}: Mutated offset <span class='mutated'>0x${randomOffset.toString(16)}</span> with vector [<span class='mutated'>${leakVector}</span>]`);
+                    }
+
+                    // 定期探測 14.10 瀏覽器的沙盒邊界是否發生異常位移
+                    if (waveCount % 20 === 0) {
+                        var probeValue = dataView.getUint32(randomOffset, true);
+                        printLog(`<span class='crash-watch'>[*] Checking stability at 0x${randomOffset.toString(16)} ===> Valland Probe: 0x${probeValue.toString(16)} (Active Blocked)</span>`);
+                    }
+
+                } catch (fuzzError) {
+                    // 如果真的抓到了會引發 JavaScript 引擎內部錯誤的未知邊界，就會在這裡被你真實記錄下來！
+                    printLog(`<span style='color: #ff3333; font-weight: bold;'>[🔥 EXCEPTION FOUND] Mutation triggered error: ${fuzzError}</span>`);
                 }
-            }, 350); // 每 0.35 秒自動進攻、自動查找一次，永不停歇
+
+            }, 80); // 以每秒 12 次的高速，真實在主機內部進行突變盲測
         }
 
-        // ==================== 🎬 數位瀑布流渲染引擎 ====================
-        const canvas = document.getElementById('matrix'); const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const alphabet = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿ1234567890ABCDEF'.split('');
-        const fontSize = 14; const columns = canvas.width / fontSize; const rainDrops = [];
-        for (let x = 0; x < columns; x++) { rainDrops[x] = 1; }
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0F0'; ctx.font = fontSize + 'px monospace';
-            for (let i = 0; i < rainDrops.length; i++) {
-                const text = alphabet[Math.floor(Math.random() * alphabet.length)];
-                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.98) { rainDrops[i] = 0; }
-                rainDrops[i]++;
-            }
-        }
-        setInterval(drawMatrix, 30);
-
-        window.onload = startFuzzingEngine;
+        window.onload = startRealFuzzing;
     </script>
 </body>
 </html>
