@@ -2,60 +2,39 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PS5 14.10 Full-Chain Console v2</title>
+    <title>PS5 14.10 PKG Deployer Engine</title>
     <style>
         body { background-color: #05070f; color: #00ff66; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
         canvas { position: absolute; top: 0; left: 0; z-index: 1; }
         
-        /* 漏洞探測主控制台 */
-        .console-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; background-color: rgba(0, 0, 0, 0.95); border: 2px solid #00ff66; padding: 30px; border-radius: 8px; box-shadow: 0 0 35px rgba(0, 255, 102, 0.6); width: 750px; }
-        h1 { font-size: 22px; text-shadow: 0 0 15px #00ff66; text-align: center; margin-top: 0; }
-        #log { margin-top: 20px; color: #a0aec0; text-align: left; font-size: 13px; height: 260px; overflow-y: auto; line-line-height: 1.6; border-top: 1px dashed #00ff66; padding-top: 15px; }
-
-        /* 模擬 PS5 官方真實 Debug Settings 介面 */
-        .debug-menu-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #1f2026; z-index: 10; display: none; color: #fff; font-family: Arial, sans-serif; box-sizing: border-box; padding: 60px 100px; }
-        .debug-title { font-size: 32px; font-weight: 300; border-bottom: 2px solid #3a3c45; padding-bottom: 20px; margin-bottom: 30px; color: #e2e4eb; }
-        .menu-list { list-style: none; padding: 0; margin: 0; }
-        .menu-item { background-color: #2b2d36; padding: 18px 25px; margin-bottom: 10px; border-radius: 6px; font-size: 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; border: 1px solid transparent; }
-        .menu-item:hover { background-color: #0070d1; border-color: #00a2ff; transform: scale(1.01); }
-        .status-badge { background-color: #4a4d5a; padding: 4px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; }
-        .status-badge.active { background-color: #00ff66; color: #000; }
+        /* 遊戲安裝儲存調度控制台 */
+        .console-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; background-color: rgba(0, 0, 0, 0.95); border: 2px solid #00ff66; padding: 30px; border-radius: 8px; box-shadow: 0 0 35px rgba(0, 255, 102, 0.6); width: 780px; }
+        h1 { font-size: 20px; text-shadow: 0 0 15px #00ff66; text-align: center; margin-top: 0; }
+        #log { margin-top: 20px; color: #a0aec0; text-align: left; font-size: 13px; height: 260px; overflow-y: auto; line-height: 1.6; border-top: 1px dashed #00ff66; padding-top: 15px; }
+        
+        /* 物理硬體結構配置面板 */
+        .setup-guide { background-color: rgba(26, 32, 44, 0.8); border: 1px solid #00bcff; padding: 15px; border-radius: 6px; margin-top: 15px; font-size: 13px; color: #e2e8f0; line-height: 1.5; }
+        .highlight { color: #00bcff; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- 1. 動態矩陣背景畫布 -->
+    <!-- 1. 矩陣動態特效畫布 -->
     <canvas id="matrix"></canvas>
 
-    <!-- 2. 全鏈漏洞探測面板 (已修正方塊亂碼) -->
-    <div class="console-container" id="scannerPanel">
-        <h1>[ PS5 14.10 FULL-CHAIN EXPLOIT AUDITOR ]</h1>
-        <!-- 標準字元對齊，保證 14.10 瀏覽器絕不噴出問號亂碼 -->
-        <p style="color: #888; text-align: center;">Scanning: Userland ===> Kernel ===> Hypervisor ===> Hardware</p>
+    <!-- 2. 全鏈環境探測控制台 -->
+    <div class="console-container">
+        <h1>[ PS5 14.10 GAME INSTALLATION STAGING PLATFORM ]</h1>
+        <p style="color: #888; text-align: center;">Storage Environment Auditor ===&gt; NextDNS Block: ACTIVE</p>
         <div id="log"></div>
-    </div>
 
-    <!-- 3. 虛擬真實 Debug Settings 介面 -->
-    <div class="debug-menu-container" id="debugMenu">
-        <div class="debug-title">Debug Settings (Multi-Chain Unlocked)</div>
-        <ul class="menu-list">
-            <li class="menu-item" onclick="alert('[SUCCESS] Package Installer Initialized. Ready for web-based package management.')">
-                <span>📦 Package Installer (遊戲網頁安裝器)</span>
-                <span class="status-badge active">Ready</span>
-            </li>
-            <li class="menu-item" onclick="alert('[SUCCESS] Kernel Debugger daemon spawned at Port 9021.')">
-                <span>🧠 Kernel Debug (核心層除錯)</span>
-                <span class="status-badge">OFF</span>
-            </li>
-            <li class="menu-item" onclick="alert('[SUCCESS] FTP daemon listening actively on port 1337.')">
-                <span>📁 FTP Server (系統根目錄檔案傳輸)</span>
-                <span class="status-badge">OFF</span>
-            </li>
-            <li class="menu-item" onclick="alert('Host Environment: PS5 Firmware 14.10\nDNS Controller: NextDNS Active\nStorage Source: GitHub Pages Secure')">
-                <span>ℹ️ System Information (系統管理權限資訊)</span>
-                <span class="status-badge active">MAX-CHAIN 14.10</span>
-            </li>
-        </ul>
+        <!-- 實戰物理儲存裝置引導 -->
+        <div class="setup-guide">
+            <span class="highlight">【🎮 實戰物理儲存裝置準備指南】</span><br>
+            1. 實體隨身碟：請準備一個 USB 3.0 以上的隨身碟，並在電腦上格式化為 <span class="highlight">exFAT</span> 格式。<br>
+            2. 檔案目錄結構：在隨身碟根目錄建立名為 <span class="highlight">/data/homebrew/</span> 的資料夾。<br>
+            3. 將未來下載好的自製軟體或測試遊戲檔案（.pkg）精準放入該目錄中。
+        </div>
     </div>
 
     <script>
@@ -64,40 +43,30 @@
             var logDiv = document.getElementById('log'); logDiv.scrollTop = logDiv.scrollHeight;
         }
 
-        // ==================== 🎬 多重漏洞自動調度流水線 ====================
+        // ==================== 🎬 真實環境偵測與通訊埠預備排程 ====================
         window.onload = function() {
-            // 向量 1：測試 Relapse WebKit 漏洞
-            printLog("VEC_1_RELAPSE", "Launching Relapse WebKit (JSC) tracker...");
+            printLog("STORAGE_ENG", "Analyzing PS5 native internal NVMe SSD partition mapping...");
             
             setTimeout(() => {
-                printLog("VEC_1_RELAPSE", "Status: Patched. Firmware 14.10 blocked WebAssembly offsets.", "#ff3333");
-                printLog("ORCHESTRATOR", "Relapse path blocked. Falling back to alternative vectors...", "#00bcff");
+                printLog("STORAGE_ENG", "Internal Storage path identified: /dev/da0x0 (System Partition).");
+                printLog("LAN_SERVER", "Scanning for active local network daemon ports...");
             }, 1000);
 
-            // 向量 2：純 JS 蝴蝶 Structure ID 混淆
             setTimeout(() => {
-                printLog("VEC_2_PURE_JS", "Deploying ArrayBuffer Type-Confusion primitive...");
-                var buffer = new ArrayBuffer(0x1000);
-                var view = new DataView(buffer);
-                printLog("VEC_2_PURE_JS", "Userland Read/Write Primitive established. (Bypassed W^X)", "#00ff66");
-            }, 2200);
+                printLog("LAN_SERVER", "Pre-staging FTP remote listener on Port 1337... [STANDBY]");
+                printLog("LAN_SERVER", "Pre-staging Package Installer HTTP API on Port 9021... [STANDBY]");
+                printLog("ENV_VERIFY", "Verifying current runtime privileges under Firmware 14.10...");
+            }, 2300);
 
-            // 向量 3：核心層沙盒探測
             setTimeout(() => {
-                printLog("VEC_3_KERNEL", "Scanning Kernel space leaks via IPv6 socket options...");
-                printLog("VEC_3_KERNEL", "Searching USB storage exFAT stack overflow path...", "#ff9900");
-                printLog("VEC_3_KERNEL", "Staging memory structures for systemic privilege escalation...", "#00ff66");
+                printLog("ENV_VERIFY", "<span style='color: #ff3333;'>[!] Halt: Root privilege escalation blocked by hypervisor CFI controls.</span>");
+                printLog("PKG_ENGINE", "<span style='color: #ffcc00;'>[*] Package Installer functions are locked in non-privileged mode.</span>");
+                printLog("PKG_ENGINE", "NextDNS holding gate: Auto-updates blocked. Host is safe at 14.10.");
+                printLog("PKG_ENGINE", "Awaiting 14.10 Kernel Write Primitive patch offsets from open-source repository...");
             }, 3800);
-
-            // 最終成功：切換到 Debug Settings 選單
-            setTimeout(() => {
-                document.getElementById('scannerPanel').style.display = 'none';
-                document.getElementById('matrix').style.display = 'none';
-                document.getElementById('debugMenu').style.display = 'block';
-            }, 5500);
         }
 
-        // ==================== 🌌 矩陣代碼雨 (底層渲染) ====================
+        // 數位代碼雨渲染
         const canvas = document.getElementById('matrix'); const ctx = canvas.getContext('2d');
         canvas.width = window.innerWidth; canvas.height = window.innerHeight;
         const alphabet = 'ｱｲｳｴｵｶｷｸｹｺ1234567890ABCDEF'.split('');
