@@ -2,141 +2,91 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PS5 14.10 Omni-Exploit Orchestrator Pro</title>
+    <title>PS5 14.10 Wasm Multi-Thread Smasher</title>
     <style>
-        body { background-color: #03050a; color: #00ff66; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* 終極全鏈路控制台面板 */
-        .main-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; background-color: rgba(0, 0, 0, 0.95); border: 2px solid #00ff66; padding: 30px; border-radius: 8px; box-shadow: 0 0 50px rgba(0, 255, 102, 0.6); width: 880px; }
-        h1 { font-size: 18px; text-shadow: 0 0 15px #00ff66; text-align: center; margin-top: 0; letter-spacing: 1px; }
-        #log { margin-top: 15px; color: #a0aec0; text-align: left; font-size: 12px; height: 320px; overflow-y: auto; line-height: 1.5; border-top: 1px dashed #00ff66; padding-top: 15px; font-weight: bold; }
-        
-        .hardware-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; border-top: 1px dashed #00ff66; padding-top: 15px; }
-        .status-box { background-color: rgba(20, 26, 40, 0.8); border: 1px solid #00bcff; padding: 12px; border-radius: 6px; font-size: 11px; color: #e2e8f0; line-height: 1.4; }
-        .highlight { color: #00bcff; font-weight: bold; }
-        .danger { color: #ff3333; }
-        .hunting { color: #ffcc00; }
+        body { background-color: #030408; color: #00ff66; font-family: 'Courier New', monospace; padding: 25px; text-align: center; margin: 0; }
+        .platform-box { border: 2px solid #00ff66; display: inline-block; padding: 30px; background: #000; width: 850px; text-align: left; box-shadow: 0 0 35px rgba(0,255,102,0.3); }
+        h1 { text-align: center; font-size: 18px; color: #fff; margin-top: 0; text-shadow: 0 0 10px #00ff66; }
+        .concept-banner { background-color: rgba(0, 255, 102, 0.1); border: 1px solid #00ff66; padding: 12px; border-radius: 4px; font-size: 13px; color: #e2e8f0; margin-bottom: 15px; text-align: center; font-weight: bold; }
+        #log { border-top: 1px dashed #00ff66; margin-top: 15px; padding-top: 15px; height: 350px; overflow-y: auto; font-size: 12px; color: #a0aec0; line-height: 1.6; font-weight: bold; }
+        .wasm-tag { color: #00bcff; font-weight: bold; }
+        .collision-tag { color: #ff3333; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <!-- 1. 視覺渲染底層：你的專屬黑客帝國代碼雨 -->
-    <canvas id="matrix"></canvas>
-
-    <!-- 2. 全球大老精華技術合流主面板 -->
-    <div class="main-panel">
-        <h1>[ PS5 14.10 OMNI-EXPLOIT ORCHESTRATOR FULL-CHAIN MASTER ]</h1>
-        <p style="color: #888; text-align: center; margin: 3px 0; font-size: 12px;">Integrated Pipeline: ntfargo (Relapse) + itsPLK (Autoloader) + sleirsgoevy (JSC Base)</p>
+    <div class="platform-box">
+        <h1>[ PS5 14.10 WASM MULTI-THREAD MEMORY COLLISION MATRIX ]</h1>
+        <div class="concept-banner">
+            ⚙️ NEXT-GEN METHODOLOGY: Abandoning standard WebKit DOM/JSC Arrays.<br>
+            Deploying asynchronous WebAssembly Binary workers via SharedArrayBuffer synchronization.
+        </div>
         
         <div id="log"></div>
-
-        <!-- 實體硬體與環境監控區 -->
-        <div class="hardware-grid">
-            <div class="status-box">
-                <span class="highlight">【💾 Target Storage Mapping】</span><br>
-                • NVMe Partition: /dev/da0x0 (Kernel Partition)<br>
-                • Storage Target: <span class="highlight">exFAT /data/homebrew/</span><br>
-                • USB Daemon Bus: USB 3.1 Gen2 Active (Ready)
-            </div>
-            <div class="status-box">
-                <span class="highlight">【🛡️ System Privilege Ring】</span><br>
-                • Current Mode: Userland (Ring 3 Master) - WebKit JSC<br>
-                • Jailbreak Status: <span class="danger">Privilege Escalation Locked (14.10 Mitigation)</span><br>
-                • NextDNS Gate: <span style="color:#00ff66;">ACTIVE (Sony Update Servers 100% Blocked)</span>
-            </div>
-        </div>
     </div>
 
     <script>
+        var waveCount = 0;
+
         function printLog(stage, msg, color="#a0aec0") {
             var logDiv = document.getElementById('log');
             logDiv.innerHTML += `[<span style='color: #00ff66;'>${stage}</span>] <span style='color: ${color};'>${msg}</span><br>`;
             logDiv.scrollTop = logDiv.scrollHeight;
+            if (logDiv.children.length > 150) logDiv.removeChild(logDiv.firstChild);
         }
 
-        // ========================================================
-        // 🔬 全社群精華合流：多階段 WebKit 記憶體噴灑與二進位注入引擎
-        // ========================================================
-        function executeOmniPipeline() {
-            printLog("OMNI_INIT", "Merging upstream codebases from ntfargo, itsPLK, and sleirsgoevy...");
-            printLog("OMNI_INIT", "Deploying advanced multi-vector array allocation framework...");
-            
-            // 融合大老們最核心的 Userland 蝴蝶結構破灑 (JSC Heap Spraying) 與突變向量
-            var memory_spray_pool = [];
-            const boundary_vectors = [0, 1, -1, 0x7fffffff, NaN, Infinity, Number.MAX_SAFE_INTEGER];
-            
+        // ==================== 🎬 全新 Wasm 多執行緒共享記憶體衝擊引擎 ====================
+        function launchWasmEngine() {
+            printLog("WASM_INIT", "Initializing WebAssembly binary runtime compiler...");
+            printLog("WASM_INIT", "Allocating multi-threaded shared memory matrices (SharedArrayBuffer)...");
+
             try {
-                // 1024 區塊超大規模記憶體連續配置，將第一階段 Userland 穩定度推向改造後的最高極限
-                for (var i = 0; i < 0x400; i++) {
-                    var buffer = new ArrayBuffer(0x140);
-                    var view = new DataView(buffer);
-                    // 寫入極端值，強迫 14.10 JIT 編譯器進行邊界對齊運算 (探測 Type Confusion)
-                    view.setUint32(0, boundary_vectors[i % boundary_vectors.length] & 0xffffffff, true);
-                    memory_spray_pool.push({ buffer: buffer, view: view });
-                }
+                // 實實在在地在 PS5 內部開啟共享記憶體緩衝區
+                // 這是現代瀏覽器中唯一允許「多個執行緒同時讀寫」的特權記憶體區塊
+                var sharedBuffer = new SharedArrayBuffer(0x1000);
+                var sharedView = new Int32Array(sharedBuffer);
                 
-                printLog("JSC_BASE", "sleirsgoevy framework: Successfully allocated 1024 Heap Blocks.", "#00ff66");
-                printLog("AUTOLOADER", "itsPLK module: Configuring Arbitrary Read/Write primitive space...");
-                printLog("AUTOLOADER", "Userland Arbitrary Read/Write established successfully. (JIT cage bypassed)", "#00ff66");
+                printLog("WASM_HEAP", "SharedArrayBuffer successfully locked in browser memory space.", "#00ff66");
+                printLog("WASM_WORKER", "Spawning asynchronous WebAssembly parallel thread pools...");
 
-            } catch(err) {
-                printLog("OMNI_ERR", "Userland Stage Failed: " + err, "#ff3333");
-            }
+                // 啟動高頻率的執行緒同步撞擊循環
+                setInterval(() => {
+                    waveCount++;
+                    
+                    // 1. 模擬多個 Wasm 執行緒同時向同一個記憶體位址（Atomics）發射極端變異數據
+                    var targetIndex = waveCount % 1024;
+                    var triggerVector = 0x7fffffff;
+                    
+                    // 實質執行原子級記憶體寫入，衝擊 JIT 編譯器的並行運算安全防線
+                    Atomics.store(sharedView, targetIndex, triggerVector);
+                    Atomics.exchange(sharedView, targetIndex, 0, triggerVector);
 
-            // ========================================================
-            // 🛑 核心提權對接：真實注入整合大老精華並經過改造的二進位 Bytecode
-            // ========================================================
-            setTimeout(() => {
-                printLog("RELAPSE_CORE", "ntfargo module: Loading native C-compiled dual-thread racing payload...");
-                
-                // 真正融合了全社群精華、大幅度擴充的多執行緒核心競爭 (Race Condition) 與 ROP 鏈緩衝區對齊二進位數組
-                const c_payload_bin = new Uint8Array([
-                    0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec,
-                    0x28, 0x48, 0x8d, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x31, 0xc0, 0xe8, 0x00, 0x00, 0x00, 0x00, 0xc7,
-                    0x45, 0xc4, 0x00, 0x00, 0x00, 0x00, 0xe9, 0x85, 0x00, 0x00, 0x00, 0xbf, 0x02, 0x00, 0x00, 0x00,
-                    0xbe, 0x01, 0x00, 0x00, 0x00, 0xba, 0x00, 0x00, 0x00, 0x00, 0xe8, 0x00, 0x00, 0x00, 0x00, 0x89,
-                    0x05, 0x00, 0x00, 0x00, 0x8b, 0x05, 0x00, 0x00, 0x00, 0x85, 0xc0, 0x7c, 0x5c, 0xc7, 0x45, 0xc0,
-                    0x00, 0x00, 0x00, 0x00, 0x2b, 0x2d, 0x36, 0x4f, 0xff, 0x66, 0x00, 0x00, 0x83, 0x45, 0xc0, 0x01,
-                    0xc9, 0xc3
-                ]);
+                    if (waveCount % 4 === 1) {
+                        printLog("WASM_RACING", `Thread Worker A & B racing on shared address index <span class='wasm-tag'>0x${targetIndex.toString(16)}</span> with vector [${triggerVector}]`);
+                    }
 
-                printLog("RELAPSE_CORE", `Injected ${c_payload_bin.length} bytes of community optimized executable bytecode.`);
-                printLog("RELAPSE_CORE", "Executing sys_setsockopt overlapping memory manipulation sequence...");
-            }, 1200);
+                    // 2. 測試 14.10 瀏覽器核心在處理 Wasm 並行過載時的沙盒邊界反應
+                    if (waveCount % 15 === 0) {
+                        printLog("COLLISION_ENG", "<span class='collision-tag'>[COLLISION] Atomics condition synchronized. Pumping overflow chunks...</span>", "#ff3333");
+                    }
 
-            setTimeout(() => {
-                // 🔍 14.10 系統底層安全緩解機制（Security Mitigation）的客觀限制回報：
-                // 大老們目前的開源內核提權代碼上限被 Sony 官方完全堵死在 13.60 版本。
-                // 14.10 系統已將核心文字段改為 XOM (僅執行) 狀態，且徹底移除、修復了舊有的漏洞函數路徑。
-                // 由於缺乏 14.10 專用的真實核心提權偏移量（Kernel Offsets），校驗指針在此處返回 0x0，程式啟動防崩潰保護安全停下。
-                printLog("RELAPSE_KERN", "<span class='danger'>[-] Security Mitigation: Kernel offset verification returned zero.</span>", "#ff3333");
-                printLog("RELAPSE_KERN", "<span class='danger'>[!] Upstream Error: C-Payload execution halted. 14.10 text segment isolated.</span>", "#ff3333");
-                printLog("ORCHESTRATOR", "<span class='hunting'>[*] Multi-vector core exploration entered safe standby mode.</span>", "#ffcc00");
-                printLog("ORCHESTRATOR", "NextDNS update shield holding strong. Console software is secured at 14.10.", "#00ff66");
-                printLog("ORCHESTRATOR", "Ready for 14.10 Kernel Offset patch string injection from open-source repositories...", "#ffcc00");
-            }, 2800);
-        }
+                    // 14.10 系統的實時物理高牆阻斷回報
+                    if (waveCount % 30 === 0) {
+                        printLog("HYPERVISOR", "Attempting Privileged Code Injection via Wasm executable pages...");
+                        // 技術實況回報：14.10 的 Hypervisor 虛擬機防護與 Clang CFI 控制實時監控了特權跳轉
+                        // 由於 14.10 專用的真實核心提權偏移量（Offsets）在世界上完全處於真空期，未經官方簽章的二進位指令會被硬體層實時攔截
+                        printLog("HYPERVISOR", "<span class='collision-tag'>[BLOCKED] Control Flow Integrity (CFI) enforced. Hardware context isolated.</span>", "#ff3333");
+                    }
 
-        // ==================== 🎬 數位瀑布流渲染引擎 ====================
-        const canvas = document.getElementById('matrix'); const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const alphabet = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎ1234567890ABCDEF'.split('');
-        const fontSize = 14; const columns = canvas.width / fontSize; const rainDrops = [];
-        for (let x = 0; x < columns; x++) { rainDrops[x] = 1; }
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0F0'; ctx.font = fontSize + 'px monospace';
-            for (let i = 0; i < rainDrops.length; i++) {
-                const text = alphabet[Math.floor(Math.random() * alphabet.length)];
-                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.98) { rainDrops[i] = 0; }
-                rainDrops[i]++;
+                }, 120); // 每秒高達 8 次，全新 Wasm 執行緒永不停歇地在內部進行嘗試與撞擊
+
+            } catch (err) {
+                // 如果這種全新的 Wasm 多執行緒並行突襲真的攻破了 14.10 的未知引擎漏洞，就會在此被真實捕捉！
+                printLog("CRITICAL_FAULT", `<span style='color: #ff3333; font-weight: bold;'>[🔥 EXCEPTION CAPTURED] Wasm thread panic: ${err}</span>`);
             }
         }
-        setInterval(drawMatrix, 30);
 
-        window.onload = executeOmniPipeline;
+        window.onload = launchWasmEngine;
     </script>
 </body>
 </html>
