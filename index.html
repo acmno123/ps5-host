@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>PS5 Local Exploit Host</title>
+    <style>
+        body { background-color: #1a1a1a; color: #00ff00; font-family: monospace; text-align: center; padding-top: 50px; }
+        .box { border: 2px solid #00ff00; display: inline-block; padding: 20px; border-radius: 10px; background-color: #000; }
+        button { background-color: #00ff00; color: black; font-weight: bold; border: none; padding: 12px 30px; font-size: 16px; cursor: pointer; margin-top: 20px; }
+        button:hover { background-color: #00cc00; }
+        #log { margin-top: 20px; color: #cccccc; text-align: left; max-width: 500px; margin-left: auto; margin-right: auto; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h1>[ PS5 14.10 Local Exploit Host ]</h1>
+        <p>Ready to deploy stage 1 WebKit exploit...</p>
+        <button onclick="triggerExploit()">DEPLOY EXPLOIT</button>
+        <div id="log"></div>
+    </div>
+
+    <script>
+        function log(msg) {
+            document.getElementById('log').innerHTML += "[*] " + msg + "<br>";
+        }
+
+        function triggerExploit() {
+            document.getElementById('log').innerHTML = "";
+            log("Initializing WebKit exploit...");
+            log("Setting up JSObject allocations...");
+            
+            // 【未來真實漏洞代碼填入處】
+            // 範例：以下為觸發真實 WebKit 漏洞常見的記憶體混淆（Type Confusion）或 UAF 邏輯預留位置
+            try {
+                //真實漏洞發生時，會在這裡透過構造特定陣列(Array)來引發記憶體溢位
+                log("Spraying structure IDs...");
+                log("Triggering Use-After-Free (UAF)...");
+                
+                // 由於 14.10 目前核心漏洞尚未公開，此處先做邏輯等待
+                log("Error: Current firmware 14.10 patched known offsets.");
+                log("Waiting for new kernel patch offsets from GitHub...");
+            } catch(e) {
+                log("Exploit failed: " + e);
+            }
+        }
+    </script>
+</body>
+</html>
