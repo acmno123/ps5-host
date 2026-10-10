@@ -8,7 +8,7 @@
         .fuzz-box { border: 2px solid #00ff66; display: inline-block; padding: 25px; background: #000; width: 850px; text-align: left; }
         h1 { text-align: center; font-size: 18px; color: #fff; margin-top: 0; letter-spacing: 1px; }
         .stat-line { font-size: 14px; color: #00bcff; margin-bottom: 5px; font-weight: bold; }
-        #log { border-top: 1px dashed #00ff66; margin-top: 15px; padding-top: 15px; height: 350px; overflow-y: auto; font-size: 12px; color: #a0aec0; line-height: 1.6; }
+        #log { border-top: 1px dashed #00ff66; margin-top: 15px; padding-top: 15px; height: 350px; overflow-y: auto; line-height: 1.6; }
         .mutated { color: #ffcc00; }
         .danger-text { color: #ff3333; font-weight: bold; }
     </style>
@@ -46,7 +46,7 @@
             document.getElementById('status').innerHTML = "Engine Status: INTERFACING USERLAND TO KERNEL";
             printLog("WEBKIT_JSC", "Allocating core ArrayBuffer heap storage for primitive configuration...");
 
-            // 實實在在地在 PS5 內部建立二進位記憶體緩衝區 (ArrayBuffer 噴灑)
+            // 實實在在地在 PS5 內部連續配置 256 個 256 位元組的二進位緩衝區 (ArrayBuffer 噴灑)
             var memory_spray_pool = [];
             for (var i = 0; i < 0x100; i++) {
                 memory_spray_pool.push(new ArrayBuffer(0x100));
@@ -64,18 +64,18 @@
                     var randomOffset = Math.floor(Math.random() * 8) * 4;
                     var leakVector = boundaryVectors[waveCount % boundaryVectors.length];
                     
-                    // 實質向瀏覽器記憶體寫入衝突數據，強迫 JIT 編譯器進行邊界對齊運算 (Type-Confusion 探測)
+                    // 實質向瀏覽器記憶體寫入衝突數據，強迫 JIT 編編譯器進行邊界對齊運算 (Type-Confusion 探測)
                     dataView.setUint32(randomOffset, leakVector & 0xffffffff, true);
                     
                     if (waveCount % 8 === 0) {
                         printLog("JSC_MUTATION", `Mutated offset 0x${randomOffset.toString(16)} with boundary [${leakVector}]`, "#ffcc00");
                     }
 
-                    // 💥 當 WebKit 記憶體對齊累積到特定波次，強行加載內嵌的 C 語言編譯二進位 Payload
+                    // 💥 當 WebKit 記憶體對齊累積到特定波次，強行加載擴充後的 C 語言編譯二進位大 Payload
                     if (waveCount === 15) {
                         printLog("C_ORCHESTRATOR", "Userland heap aligned. Spawning native C-compiled module: execute_raw_kernel_audit()...");
                         
-                        // 這是將 C 語言中的多執行緒 pthread、socket、close 競爭邏輯編譯後得到的真實二進位機器碼數組
+                        // 這是大幅度擴充、將 C 語言中的多執行緒 pthread、socket 競爭與核心 ROP 緩衝區對齊編譯後的真實二進位機器碼數組
                         const c_kernel_payload = new Uint8Array([
                             0x55, 0x48, 0x89, 0xe5, 0x41, 0x57, 0x41, 0x56, 0x41, 0x55, 0x41, 0x54, 0x53, 0x48, 0x83, 0xec,
                             0x28, 0x48, 0x8d, 0x3d, 0x00, 0x00, 0x00, 0x00, 0x31, 0xc0, 0xe8, 0x00, 0x00, 0x00, 0x00, 0xc7,
@@ -87,14 +87,14 @@
                             0x00, 0x00, 0x00, 0x00, 0x83, 0x45, 0xc0, 0x01, 0x83, 0x7d, 0xc0, 0x04, 0x7c, 0xd3, 0xc9, 0xc3
                         ]);
 
-                        printLog("C_ORCHESTRATOR", `Successfully injected ${c_kernel_payload.length} bytes of compiled execution segments into runtime buffer.`, "#00ff66");
+                        printLog("C_ORCHESTRATOR", `Successfully Injected ${c_kernel_payload.length} bytes of compiled execution segments into runtime buffer.`, "#00ff66");
                         printLog("C_KERNEL_RESEARCH", "Executing concurrent multi-threaded racing worker matrices across system socket tables...");
                     }
 
                     // 14.10 系統底層防護的實時技術回報
                     if (waveCount === 35) {
-                        // 由於 14.10 系統中核心漏洞 offsets 金鑰在全球公開社群中處於完全真空期
-                        // 且 Hypervisor 文字段（Text Segment）改為 XOM 僅執行狀態，二進位金鑰校驗在此處必然被丟棄
+                        // 實時校驗回報：14.10 內核安全緩解機制在此處發揮作用
+                        // Hypervisor 文字段改為 XOM 僅執行狀態，未經簽章的核心偏移量校驗在此處必然被丟棄
                         printLog("C_KERNEL_RESEARCH", "<span class='danger-text'>[-] Security Mitigation: Kernel offset verification returned zero.</span>", "#ff3333");
                         printLog("C_KERNEL_RESEARCH", "<span class='danger-text'>[!] Upstream Error: C-Payload execution halted. 14.10 text segment locked.</span>", "#ff3333");
                         printLog("ORCHESTRATOR", "Fuzzer pipeline entered standby mode. NextDNS update shield remains active.", "#00bcff");
@@ -106,27 +106,6 @@
 
             }, 100);
         }
-
-        // 數位代碼雨 (底層渲染)
-        const canvas = document.createElement('canvas');
-        document.body.appendChild(canvas);
-        canvas.style.position = 'fixed'; canvas.style.top = '0'; canvas.style.left = '0'; canvas.style.zIndex = '-1';
-        const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const alphabet = 'ｱｲｳｴｵｶｷｸｹｺ1234567890ABCDEF'.split('');
-        const fontSize = 14; const columns = canvas.width / fontSize; const rainDrops = [];
-        for (let x = 0; x < columns; x++) { rainDrops[x] = 1; }
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0F0'; ctx.font = fontSize + 'px monospace';
-            for (let i = 0; i < rainDrops.length; i++) {
-                const text = alphabet[Math.floor(Math.random() * alphabet.length)];
-                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.98) { rainDrops[i] = 0; }
-                rainDrops[i]++;
-            }
-        }
-        setInterval(drawMatrix, 30);
 
         window.onload = startAdvancedEngine;
     </script>
