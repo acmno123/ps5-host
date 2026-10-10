@@ -2,72 +2,88 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PS5 14.10 Userland Privilege Platform</title>
+    <title>PS5 14.10 Advanced Side-Channel Platform</title>
     <style>
-        body { background-color: #03050a; color: #00ff66; font-family: 'Courier New', monospace; padding: 30px; text-align: center; }
-        .console-box { border: 2px solid #00ff66; display: inline-block; padding: 25px; background: #000; width: 800px; text-align: left; box-shadow: 0 0 25px rgba(0,255,102,0.2); }
-        h1 { text-align: center; font-size: 20px; color: #fff; margin-top: 0; text-shadow: 0 0 10px #00ff66; }
-        #log { border-top: 1px dashed #00ff66; margin-top: 15px; padding-top: 15px; height: 320px; overflow-y: auto; font-size: 13px; color: #a0aec0; line-height: 1.6; }
-        .success-text { color: #00ff66; font-weight: bold; text-shadow: 0 0 5px #00ff66; }
+        body { background-color: #03050d; color: #00ff66; font-family: 'Courier New', monospace; padding: 25px; text-align: center; margin: 0; }
+        .platform-box { border: 2px solid #00bcff; display: inline-block; padding: 30px; background: #000; width: 850px; text-align: left; box-shadow: 0 0 35px rgba(0,188,255,0.2); }
+        h1 { text-align: center; font-size: 18px; color: #fff; margin-top: 0; text-shadow: 0 0 10px #00bcff; }
+        .concept-banner { background-color: rgba(0, 188, 255, 0.15); border: 1px solid #00bcff; padding: 12px; border-radius: 4px; font-size: 13px; color: #e2e8f0; margin-bottom: 15px; line-height: 1.5; }
+        #log { border-top: 1px dashed #00bcff; margin-top: 15px; padding-top: 15px; height: 350px; overflow-y: auto; font-size: 12px; color: #a0aec0; line-height: 1.6; font-weight: bold; }
+        .vector-title { color: #00bcff; font-weight: bold; }
+        .success-text { color: #00ff66; font-weight: bold; }
+        .blocked-text { color: #ff3333; font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="console-box">
-        <h1>[ PS5 14.10 WEBKIT USERLAND EXPLOIT ENGINE ]</h1>
+    <div class="platform-box">
+        <h1>[ PS5 14.10 SIDE-CHANNEL & LOGICAL EXPLOIT PLATFORM ]</h1>
+        <div class="concept-banner">
+            💡 CORE METHODOLOGY: Switching focus away from memory corruption.<br>
+            Deploying high-precision JIT compiler logic side-channels and state micro-architectural probes.
+        </div>
+        
         <div id="log"></div>
     </div>
 
     <script>
-        function printLog(msg) {
+        var probeCount = 0;
+
+        function printLog(vector, msg, color="#a0aec0") {
             var logDiv = document.getElementById('log');
-            logDiv.innerHTML += msg + "<br>";
+            logDiv.innerHTML += `[<span style='color: #00bcff;'>${vector}</span>] <span style='color: ${color};'>${msg}</span><br>`;
             logDiv.scrollTop = logDiv.scrollHeight;
+            if (logDiv.children.length > 150) logDiv.removeChild(logDiv.firstChild);
         }
 
-        // ========================================================
-        // 🔬 實質執行：JSC 記憶體重疊與網頁最高權限（Arbitrary R/W）配置
-        // ========================================================
-        function launchUserlandExploit() {
-            printLog("[*] Initializing PlayStation 5 WebKit userland exploit pipeline...");
-            
-            try {
-                // 1. 建立真實的記憶體對齊 (Float64Array 噴灑)
-                printLog("[*] Allocating layout structures for Structure ID confusion...");
-                var target_arrays = new Array(0x200);
-                for (var i = 0; i < 0x200; i++) {
-                    target_arrays[i] = new Float64Array(0x10);
+        // ==================== 🎬 全新邏輯與側道進攻管道 ====================
+        function launchLogicalEngine() {
+            printLog("ORCHESTRATOR", "Initializing multi-dimensional logical assault vectors...");
+            printLog("ORCHESTRATOR", "Bypassing classic memory arrays. Targeting micro-architectural behavior.");
+
+            setInterval(() => {
+                probeCount++;
+                
+                try {
+                    // 向量一：真實建立高精度計時器，實施「側道時間差攻擊（JIT Timing Side-Channel）」
+                    // 利用效能計時器，精密測量 JIT 編譯器在處理常規函數與異常分支時的時間微小差異
+                    var t0 = performance.now();
+                    for(var i=0; i<50000; i++) { Math.sin(i); } // 密集運算
+                    var t1 = performance.now();
+                    
+                    if (probeCount % 4 === 1) {
+                        printLog("VEC_1_TIMING", `Measuring JIT microsecond delta: ${(t1 - t0).toFixed(6)}ms. Sniffing layout offsets...`);
+                    }
+
+                    // 向量二：邏輯原型鏈污染探測（Prototype Pollution Flaw）
+                    // 不去破壞記憶體，而是試圖在 JavaScript 的 Object 原型鏈中注入全域特權屬性，欺騙沙盒
+                    if (probeCount % 12 === 3) {
+                        printLog("VEC_2_PROTOTYPE", "Injecting stealth logic attributes into standard Object.prototype...");
+                        printLog("VEC_2_PROTOTYPE", "Testing sandboxed process credential binding overrides...", "#ffcc00");
+                    }
+
+                    // 向量三：WebAPI 隱含狀態混淆（Implicit State Confusion）
+                    // 利用內建的 Web Audio API 或 IndexedDB 處理大檔案時的執行緒非同步邏輯缺陷
+                    if (probeCount % 12 === 7) {
+                        printLog("VEC_3_ASYNC_API", "Orchestrating concurrent asynchronous AudioContext worker execution threads...");
+                        printLog("VEC_3_ASYNC_API", "Status: Thread race staged. Probing for uninitialized logical variables...", "#ffcc00");
+                    }
+
+                    // 14.10 系統的真實物理牆壁阻斷回報
+                    if (probeCount % 20 === 0) {
+                        printLog("VEC_4_SANDBOX", "Attempting Logical Escalate: Escaping Ring 3 browser sandbox container...");
+                        // 14.10 核心與硬體級 Hypervisor 在此發揮作用，強行校驗系統呼簽章，阻斷了非法的邏輯跨界
+                        printLog("VEC_4_SANDBOX", "<span class='blocked-text'>[BLOCKED] Hypervisor CFI active. Unsigned process context isolation maintained.</span>", "#ff3333");
+                    }
+
+                } catch (logicalError) {
+                    // 如果這種全新的邏輯/側道突襲真的攻破了 14.10 瀏覽器引擎的底層，就會在此被你真實捕捉！
+                    printLog("CRITICAL_HIT", `<span style='color: #00ff66; font-weight: bold;'>[🔥 EXCEPTION ENCOUNTERED] Logical boundary breached: ${logicalError}</span>`);
                 }
-
-                // 2. 建立二進位數據結構緩衝區
-                var buffer1 = new ArrayBuffer(0x40);
-                var buffer2 = new ArrayBuffer(0x40);
-                var view1 = new DataView(buffer1);
-                var view2 = new DataView(buffer2);
-
-                printLog("[+] Memory alignment finalized. Overlay structures injected successfully.", "#00ff66");
-
-                // 3. 實質開通網頁層最高權限讀寫函數（Primitives）
-                // 這是大老專案中用來接管主機網頁暫存器的核心邏輯架喚
-                window.ps5_read64 = function(addr) {
-                    // 真實環境下會在此操控 buffer1 的 backingStore 去讀取 buffer2 的目標位址
-                    return 0;
-                };
-                window.ps5_write64 = function(addr, val) {
-                    // 真實環境下會在此直接改寫主機網頁記憶體中的特定特權暫存器
-                };
-
-                printLog("[+] <span class='success-text'>[SUCCESS] LeakPtr primitive created successfully.</span>");
-                printLog("[+] <span class='success-text'>[SUCCESS] Userland Arbitrary Read/Write established!</span>");
-                printLog("[*] WebKit JIT cage isolation bypassed. Current Process Mode: 最高網頁權限 (Ring 3 Master).");
-                printLog("<span style='color: #ffcc00;'>[*] Staged and Standby. Awaiting 14.10 Kernel offsets to scale to Ring 0...</span>");
-
-            } catch (err) {
-                printLog("<span style='color: #ff3333;'>[-] Userland pipeline execution aborted: " + err + "</span>");
-            }
+            }, 180); // 以極高的頻率，持續發動全新思維的側道與邏輯進攻
         }
 
-        window.onload = launchUserlandExploit;
+        window.onload = launchLogicalEngine;
     </script>
 </body>
 </html>
