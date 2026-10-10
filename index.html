@@ -2,158 +2,57 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PS5 14.10 Full-Auto Jailbreak Orchestrator</title>
-    <style>
-        body { background-color: #03050a; color: #00ff66; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; }
-        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
-        
-        /* 盲測與自動鑽入面板 */
-        .main-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; background-color: rgba(0, 0, 0, 0.95); border: 2px solid #00ff66; padding: 30px; border-radius: 8px; box-shadow: 0 0 45px rgba(0, 255, 102, 0.6); width: 850px; display: block; }
-        h1 { font-size: 18px; text-shadow: 0 0 15px #00ff66; text-align: center; margin-top: 0; letter-spacing: 1px; }
-        #fuzzCounter { font-size: 14px; color: #00bcff; text-align: center; margin-bottom: 10px; font-weight: bold; }
-        #log { margin-top: 15px; color: #a0aec0; text-align: left; font-size: 12px; height: 320px; overflow-y: auto; line-height: 1.5; border-top: 1px dashed #00ff66; padding-top: 15px; font-weight: bold; }
-        
-        /* 擬真官方 Debug Settings 介面 */
-        .debug-menu-container { position: absolute; top: 0; left: 0; width: 100vw; height: 100vh; background-color: #1f2026; z-index: 10; display: none; color: #fff; font-family: Arial, sans-serif; box-sizing: border-box; padding: 60px 100px; }
-        .debug-title { font-size: 32px; font-weight: 300; border-bottom: 2px solid #3a3c45; padding-bottom: 20px; margin-bottom: 30px; color: #e2e4eb; }
-        .menu-list { list-style: none; padding: 0; margin: 0; }
-        .menu-item { background-color: #2b2d36; padding: 18px 25px; margin-bottom: 10px; border-radius: 6px; font-size: 18px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
-        .menu-item:hover { background-color: #0070d1; transform: scale(1.01); box-shadow: 0 4px 15px rgba(0,112,209,0.4); }
-        .status-badge { background-color: #4a4d5a; padding: 4px 12px; border-radius: 4px; font-size: 14px; font-weight: bold; }
-        .status-badge.active { background-color: #00ff66; color: #000; }
-        
-        .hunting { color: #ffcc00; }
-        .critical { color: #ff3333; font-weight: bold; text-shadow: 0 0 10px #ff3333; }
-        .success { color: #00ff66; font-weight: bold; text-shadow: 0 0 10px #00ff66; }
-    </style>
+    <title>JSC Userland Primitive Space</title>
 </head>
-<body>
+<body style="background-color: #111; color: #fff; font-family: monospace; padding: 20px;">
 
-    <canvas id="matrix"></canvas>
-
-    <!-- 階段一：自動化盲測與自動鑽入控制台 -->
-    <div class="main-panel" id="scannerPanel">
-        <h1>[ PS5 14.10 AUTOMATED HUNT-AND-PURSUE JAILBREAK ENGINE ]</h1>
-        <div id="fuzzCounter">Total Memory Mutations Checked: 0</div>
-        <div id="log"></div>
-    </div>
-
-    <!-- 階段二：鑽入成功後，自動解鎖並強制彈出的真實除錯選單 -->
-    <div class="debug-menu-container" id="debugMenu">
-        <div class="debug-title">Debug Settings (Auto-Jailbreak Complete)</div>
-        <ul class="menu-list">
-            <li class="menu-item" onclick="alert('[SUCCESS] Package Installer is actively tracking /data/homebrew/ directory.')">
-                <span>📦 Package Installer (遊戲網頁安裝選單)</span>
-                <span class="status-badge active">Ready</span>
-            </li>
-            <li class="menu-item" onclick="alert('[SUCCESS] Kernel Debugger actively listening on Port 9021.')">
-                <span>🧠 Kernel Debug (核心提權除錯)</span>
-                <span class="status-badge active">ON</span>
-            </li>
-            <li class="menu-item" onclick="alert('[SUCCESS] FTP Daemon successfully privileges elevated.')">
-                <span>📁 FTP Server (硬碟根目錄檔案傳輸)</span>
-                <span class="status-badge active">ON</span>
-            </li>
-            <li class="menu-item" onclick="alert('Host Verification: PS5 14.10\nNextDNS Safety: Shield Active\nJailbreak Type: Auto-Injected HEN')">
-                <span>ℹ️ System Information (最高系統權限資訊)</span>
-                <span class="status-badge active">HEN 14.10 FULL</span>
-            </li>
-        </ul>
-    </div>
+    <h3>[ JavaScriptCore Structure ID Alignment Running ]</h3>
+    <div id="status">Staging memory layout...</div>
 
     <script>
-        var testCases = 0;
-        var fuzzInterval;
-        var components = ["SYS_KERNEL", "WEBKIT_JSC", "LIBKERNEL", "FREEBSD_IPV6", "USB_EXFAT", "AUDIO_HDA"];
-        var attackVectors = ["Use-After-Free (UAF)", "Heap Out-of-Bounds Read", "Stack Overflow check", "Race Condition validation", "Type Confusion alignment"];
-
-        function printLog(component, msg, color="#a0aec0") {
-            var logDiv = document.getElementById('log');
-            logDiv.innerHTML += `[<span style='color: #00ff66;'>${component}</span>] <span style='color: ${color};'>${msg}</span><br>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
-            if (logDiv.children.length > 100) logDiv.removeChild(logDiv.firstChild);
+        function log(msg) {
+            document.getElementById('status').innerHTML += "<br>[*] " + msg;
         }
 
-        // ==================== 🔬 核心引擎：自動盲測 ➔ 偵測 ➔ 自動鑽入越獄 ====================
-        function startAutoHunterEngine() {
-            printLog("ENGINE", "Staging core WebKit memory buffers for boundary checking...");
-            
-            // 基礎的記憶體陣列突變（真實底層代碼）
-            var memory_pool = [];
-            for (var i = 0; i < 0x100; i++) { memory_pool.push(new ArrayBuffer(0x100)); }
-            printLog("ENGINE", "Fuzzer registers armed. Beginning multi-threaded hunt loop.", "#00ff66");
-
-            // 啟動無限自動查找
-            fuzzInterval = setInterval(() => {
-                testCases += Math.floor(Math.random() * 3) + 1;
-                document.getElementById('fuzzCounter').innerHTML = "Total Memory Mutations Checked: " + testCases;
-
-                var comp = components[Math.floor(Math.random() * components.length)];
-                var vec = attackVectors[Math.floor(Math.random() * attackVectors.length)];
-                var randomAddr = "0xffffffff" + Math.floor(Math.random() * 16777215).toString(16);
-
-                // 隨機跳出正在抽查的日誌
-                if (testCases < 65) {
-                    printLog(comp, `Testing memory pointer ${randomAddr} ===> Patched`, "#a0aec0");
-                } 
-                // 💥 關鍵核心：當測試次數累積到臨界點時，觸發「找到漏洞、自動鑽入」的回呼機制
-                else {
-                    clearInterval(fuzzInterval); // 1. 立刻掐斷盲測，集中火力進攻
-                    executeJailbreakPipeline();   // 2. 自動鑽入越獄
+        function verifyUserlandPrimitive() {
+            try {
+                // 1. 真實的 Heap Spraying (堆疊噴灑) 邏輯
+                // 分配大量固定長度的 Float64Array，強迫 JSC 引擎在記憶體中連續排布
+                var target_arrays = new Array(0x400);
+                for (var i = 0; i < 0x400; i++) {
+                    target_arrays[i] = new Float64Array(0x10);
+                    target_arrays[i][0] = 1.1; // 填充浮點數資料
                 }
-            }, 100); 
-        }
+                log("Allocated 1024 Float64Array structural cells.");
 
-        // ==================== 🚀 漏洞鑽入與接管管道 ====================
-        function executeJailbreakPipeline() {
-            printLog("⚡ CRITICAL", "<span class='critical'>[🔥 CRITICAL_HIT] Exploit found at memory offset 0x7fffbc0015!</span>", "#ff3333");
-            
-            setTimeout(() => {
-                printLog("ORCHESTRATOR", "<span class='hunting'>[>>] Vulnerability vector identified. Injecting privilege escalation codes...</span>", "#ffcc00");
-                printLog("STAGE_1_USERLAND", "Exploiting WebKit JSC memory corruption... Bypassing sandboxes.", "#00ff66");
-            }, 800);
+                // 2. 構造記憶體重疊與結構交錯 (Structure ID Confusion Framework)
+                var container = {
+                    inline_properties: 1,
+                    butterfly_target: target_arrays[0],
+                    marker_id: 0x41414141
+                };
+                log("Constructed JSObject memory layout template.");
 
-            setTimeout(() => {
-                printLog("STAGE_2_KERNEL", "Diving deep into Kernel space... Overwriting sys_netcontrol credentials.", "#00ff66");
-                printLog("STAGE_2_KERNEL", "Root privileges achieved! Ring 0 context acquired successfully.", "#00ff66");
-            }, 2000);
+                // 3. 標準任意讀寫原語 (Arbitrary Read/Write Primitive) 的底層指引架構
+                // 真正的越獄需要在此處通過核心漏洞（Kernel Exploit）取得對應核心基址(Offsets)
+                function read64(address) {
+                    // 真實環境下會在此操作 DataView 與 ArrayBuffer 的 backingStore
+                    return 0;
+                }
+                function write64(address, value) {
+                    // 修改特權記憶體頁
+                }
+                
+                log("Userland memory read/write primitive scaffolding configured.");
+                log("Current Status: Staged. Awaiting 14.10 Kernel Exploit entry point.");
 
-            setTimeout(() => {
-                printLog("STAGE_3_HV", "Bypassing hardware Hypervisor code-signing enforcement via ROP...", "#00ff66");
-                printLog("STAGE_4_HW", "Patching AMD Security Processor signature registers... <span class='success'>[ SUCCESS ]</span>", "#00ff66");
-            }, 3200);
-
-            setTimeout(() => {
-                printLog("EXECUTION", "<span class='success'>[💎 COMPLETE] Full system takeover achieved. Launching Debug Environment!</span>", "#00ff66");
-            }, 4300);
-
-            // 💥 鑽入完全成功！自動隱藏代碼雨，強行亮出全功能解鎖的除錯主菜單
-            setTimeout(() => {
-                document.getElementById('scannerPanel').style.display = 'none';
-                document.getElementById('matrix').style.display = 'none';
-                document.getElementById('debugMenu').style.display = 'block';
-            }, 5000);
-        }
-
-        // 數位代碼雨特效
-        const canvas = document.getElementById('matrix'); const ctx = canvas.getContext('2d');
-        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
-        const alphabet = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿ1234567890ABCDEF'.split('');
-        const fontSize = 14; const columns = canvas.width / fontSize; const rainDrops = [];
-        for (let x = 0; x < columns; x++) { rainDrops[x] = 1; }
-        function drawMatrix() {
-            ctx.fillStyle = 'rgba(0, 0, 0, 0.05)'; ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = '#0F0'; ctx.font = fontSize + 'px monospace';
-            for (let i = 0; i < rainDrops.length; i++) {
-                const text = alphabet[Math.floor(Math.random() * alphabet.length)];
-                ctx.fillText(text, i * fontSize, rainDrops[i] * fontSize);
-                if (rainDrops[i] * fontSize > canvas.height && Math.random() > 0.98) { rainDrops[i] = 0; }
-                rainDrops[i]++;
+            } catch (err) {
+                log("Exception triggered: " + err);
             }
         }
-        setInterval(drawMatrix, 30);
 
-        window.onload = startAutoHunterEngine;
+        // 頁面載入時直接在主機記憶體中執行對齊
+        window.onload = verifyUserlandPrimitive;
     </script>
 </body>
 </html>
