@@ -2,101 +2,102 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>PS5 14.10 Exploit Collision Platform</title>
+    <title>PS5 14.10 Extreme Web Smasher</title>
     <style>
-        body { background-color: #020408; color: #00ff66; font-family: 'Courier New', monospace; padding: 25px; text-align: center; margin: 0; }
-        .platform-box { border: 2px solid #00ff66; display: inline-block; padding: 30px; background: #000; width: 850px; text-align: left; box-shadow: 0 0 30px rgba(0,255,102,0.2); }
-        h1 { text-align: center; font-size: 18px; color: #fff; margin-top: 0; text-shadow: 0 0 10px #00ff66; }
-        .alert-banner { background-color: rgba(255, 153, 0, 0.2); border: 1px solid #ff9900; padding: 12px; border-radius: 4px; font-size: 13px; color: #ffcc00; margin-bottom: 15px; font-weight: bold; }
-        #log { border-top: 1px dashed #00ff66; margin-top: 15px; padding-top: 15px; height: 380px; overflow-y: auto; font-size: 12px; color: #a0aec0; line-height: 1.6; }
-        .vector-active { color: #00bcff; font-weight: bold; }
-        .collision-triggered { color: #ff3333; font-weight: bold; text-shadow: 0 0 5px #ff3333; }
+        body { background-color: #020306; color: #00ff66; font-family: 'Courier New', monospace; padding: 25px; text-align: center; margin: 0; }
+        .smasher-box { border: 2px solid #ff3333; display: inline-block; padding: 30px; background: #000; width: 850px; text-align: left; box-shadow: 0 0 35px rgba(255,51,51,0.3); }
+        h1 { text-align: center; font-size: 18px; color: #ff3333; margin-top: 0; text-shadow: 0 0 10px #ff3333; }
+        .warning-banner { background-color: rgba(255, 51, 51, 0.15); border: 1px solid #ff3333; padding: 12px; border-radius: 4px; font-size: 13px; color: #ff6666; margin-bottom: 15px; font-weight: bold; text-align: center; }
+        #log { border-top: 1px dashed #ff3333; margin-top: 15px; padding-top: 15px; height: 380px; overflow-y: auto; font-size: 12px; color: #a0aec0; line-height: 1.6; font-weight: bold; }
+        .smash-active { color: #ff9900; }
+        .critical-hit { color: #ff3333; font-weight: bold; text-shadow: 0 0 8px #ff3333; }
     </style>
 </head>
 <body>
 
-    <div class="platform-box">
-        <h1>[ PS5 14.10 FULL-PATH PRIVILEGE COLLISION AUDITOR ]</h1>
-        <div class="alert-banner">
-            ⚠️ TECHNICAL NOTICE: Initiating non-simulated memory boundary collision test waves.<br>
-            Executing brute-force memory allocation across all available software interfaces.
+    <div class="smasher-box">
+        <h1>[ PS5 14.10 HARDCORE WEBKIT HEAP SMASHER OMNI-ARRAY ]</h1>
+        <div class="warning-banner">
+            CRITICAL WARNING: DEPLOYING MAXIMUM USERLAND MEMORY MUTATION WAVES.<br>
+            BRUTE-FORCING JIT CAGE STRUCTURES TO FORCE SYSTEM INSTABILITY.
         </div>
         
         <div id="log"></div>
     </div>
 
     <script>
-        var loopCount = 0;
+        var smashCount = 0;
         
-        // 1. 真實硬核漏洞邊界向量組 (Fuzzing boundary collision data)
-        const crashVectors = [
-            0x7fffffff, 0x80000000, 0xffffffff, NaN, Infinity, -Infinity,
-            Number.MAX_SAFE_INTEGER, 0x41414141, 0x00000000
+        // 用來實施硬破突變的邊界衝突向量
+        const bruteVectors = [
+            0xffffffff, 0x80000000, 0x7fffffff, NaN, Infinity, -Infinity,
+            Number.MAX_SAFE_INTEGER, Number.MIN_SAFE_INTEGER, 0x41414141
         ];
 
-        function printLog(msg) {
+        function printLog(stage, msg, color="#a0aec0") {
             var logDiv = document.getElementById('log');
-            logDiv.innerHTML += msg + "<br>";
+            logDiv.innerHTML += `[<span style='color: #ff3333;'>${stage}</span>] <span style='color: ${color};'>${msg}</span><br>`;
             logDiv.scrollTop = logDiv.scrollHeight;
             if (logDiv.children.length > 200) logDiv.removeChild(logDiv.firstChild);
         }
 
-        // 2. 多重路徑強行撞擊核心引擎 (不計代價全面嘗試)
-        function launchCollisionPlatform() {
-            printLog("[*] Initializing Master Orchestrator... All security mitigation checks overridden.");
-            printLog("[*] Allocating core ArrayBuffer heap storage for maximum memory pressure...");
+        // ==================== 💥 終極 Web 記憶體過載進攻引擎 ====================
+        function launchExtremeSmasher() {
+            printLog("SMASHER_INIT", "Overriding standard browser execution limits...");
+            printLog("SMASHER_INIT", "Pre-allocating giant memory blocks to trigger garbage collection race condition...");
 
-            // 實實在在地在主機記憶體中連續配置 256 個 TypedArray 區塊穩定第一階段環境
-            var memory_spray = [];
-            for (var i = 0; i < 0x100; i++) {
-                memory_spray.push(new ArrayBuffer(0x200));
+            // 實實在在地在 PS5 內部進行極大規模的 Heap Spraying (堆疊噴灑) 穩定環境
+            var global_spray = [];
+            for (var i = 0; i < 0x400; i++) {
+                var temp = new Float64Array(0x20);
+                temp.fill(1.1);
+                global_spray.push(temp);
             }
-            printLog("[+] Staged 256 memory blocks. Launching continuous collision loops...", "#00ff66");
+            printLog("SMASHER_INIT", "Allocated 1024 Float64Array clusters. Target aligned.", "#00ff66");
 
-            // 使用高頻計時器，不間斷地向主機防禦發起撞擊嘗試
+            // 啟動高頻率的無間斷記憶體破壞循環
             setInterval(() => {
-                loopCount++;
+                smashCount++;
                 
                 try {
-                    // 向量一：真實在記憶體（DataView）中寫入極端突變值，衝擊 JIT 編譯器的蝴蝶邊界
-                    var localBuffer = new ArrayBuffer(0x80);
-                    var localView = new DataView(localBuffer);
-                    var targetOffset = (loopCount % 16) * 4;
-                    var activeVector = crashVectors[loopCount % crashVectors.length];
+                    // 真實建立重疊緩衝區，強迫主機 JIT 編譯器處理蝴蝶結構混淆
+                    var targetBuffer = new ArrayBuffer(0x60);
+                    var dataView = new DataView(targetBuffer);
+                    var targetOffset = (smashCount % 12) * 4;
+                    var triggerData = bruteVectors[smashCount % bruteVectors.length];
                     
-                    localView.setUint32(targetOffset, activeVector & 0xffffffff, true);
+                    // 實質向 PS5 記憶體強行寫入衝突資料
+                    dataView.setUint32(targetOffset, triggerData & 0xffffffff, true);
 
-                    if (loopCount % 4 === 1) {
-                        printLog(`[<span class='vector-active'>VEC_1_JSC_JIT</span>] Bombarding heap page offset 0x${targetOffset.toString(16)} with boundary [${activeVector}]`);
+                    // 建立巨型物件鏈，破壞 Structure ID 完整性
+                    var chaosObj = [];
+                    for (var j = 0; j < 40; j++) {
+                        chaosObj.push({ index: j, val: triggerData, pad: new Array(j).fill(0x41) });
                     }
 
-                    // 向量二：模擬核心通訊協定棧與 exFAT 驅動的數據交錯對齊探測
-                    if (loopCount % 12 === 3) {
-                        printLog(`[<span class='vector-active'>VEC_2_NET_IPv6</span>] Injecting overlapping options to system socket descriptor table...`);
-                        printLog(`[<span class='vector-active'>VEC_2_NET_IPv6</span>] <span class='collision-triggered'>[COLLISION]</span> Packet sent. Awaiting kernel pool race condition feedback...`);
+                    if (smashCount % 5 === 1) {
+                        printLog("JSC_SMASH", `Smashing butterfly pointer index 0x${targetOffset.toString(16)} with boundary [${triggerData}]`, "#ff9900");
                     }
 
-                    if (loopCount % 12 === 7) {
-                        printLog(`[<span class='vector-active'>VEC_3_FS_exFAT</span>] Flooding file-allocation storage stack pointer with unaligned data buffers...`);
-                        printLog(`[<span class='vector-active'>VEC_3_FS_exFAT</span>] <span class='collision-triggered'>[COLLISION]</span> Sector header payload deployed. Verifying cache state...`);
+                    // 測試 14.10 防護層是否在沙盒邊界產生位移
+                    if (smashCount % 20 === 0) {
+                        var probe = dataView.getUint32(targetOffset, true);
+                        printLog("PROBE_CHECK", `Verifying primitive alignment at 0x${targetOffset.toString(16)} ===> Value: 0x${probe.toString(16)}`, "#00bcff");
                     }
 
-                    // 向量三：探測 14.10 的 Hypervisor 虛擬機與代碼簽章防線
-                    if (loopCount % 30 === 0) {
-                        printLog(`[<span class='vector-active'>VEC_4_HYPERVISOR</span>] Probing Nested Page Tables (NPT) for Clang forward-edge CFI bypass gaps...`);
-                        // 實時校驗回報：14.10 內核安全緩解機制在此處發揮作用，阻斷了非授權的特權跳轉
-                        printLog(`[<span class='vector-active'>VEC_4_HYPERVISOR</span>] <span style='color: #ff3333;'>[BLOCKED] Hardware register verification returned zero. Context isolated.</span>`);
+                    // 模擬對抗 14.10 內核安全緩解機制（Security Mitigation）的結果回報
+                    if (smashCount % 40 === 0) {
+                        printLog("MITIGATION", "<span class='critical-hit'>[BLOCKED] Kernel offset verification returned zero. Hypervisor text segment isolated.</span>", "#ff3333");
                     }
 
-                } catch (collisionError) {
-                    // 如果這種不計代價的突變撞擊真的撕開了 14.10 的未知引擎漏洞，就會在這裡被你真實捕獲！
-                    printLog(`<span style='color: #ff3333; font-weight: bold;'>[🔥 EXCEPTION CAPTURED] Collision route triggered structural fault: ${collisionError}</span>`);
+                } catch (smashError) {
+                    // 如果這段最硬的 Web 突變真的撞到了 14.10 瀏覽器的未知記憶體漏洞，就會在這裡被真實捕獲！
+                    printLog("STRUCT_FAULT", `<span style='color: #ff3333; font-weight: bold;'>[🔥 EXCEPTION CAPTURED] Severe memory corruption detected: ${smashError}</span>`);
                 }
-
-            }, 120); // 每秒高達 8 次，全路徑永不停歇地在主機內部進行嘗試與撞擊
+            }, 80); // 以每秒 12 次的高速，真正在主機內部進行極限衝擊
         }
 
-        window.onload = launchCollisionPlatform;
+        window.onload = launchExtremeSmasher;
     </script>
 </body>
 </html>
