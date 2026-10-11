@@ -137,9 +137,9 @@ function inspectViewHeader() {
 
 function makeUpgradedHeader() { 
   for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i]; 
-  const f = scratchBytes[0] + scratchBytes[1] * 0x100 - 2; 
-  scratchBytes[0] = f & 0xff; 
-  scratchBytes[1] = (f >> 8) & 0xff; 
+const f = scratchBytes[0] + scratchBytes[1] * 0x100 - 2;
+scratchBytes[0] = f & 0xff;
+scratchBytes[1] = (f >> 8) & 0xff;
 const v = scratchDouble[0];
 return Math_isFinite(v) ? v : null;
 }
