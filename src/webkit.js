@@ -98,7 +98,6 @@ function sameBytes(l, r, c) {
   return true; 
 }
 
-// === 修復點一：展開排版，補齊 scratchWords 陣列索引 ===
 function redirectView(c, a) { 
   const h = Math_floor(a / 0x100000000); 
   scratchWords[0] = a - h * 0x100000000; 
@@ -136,14 +135,12 @@ function inspectViewHeader() {
   return v; 
 }
 
-// === 修復點三：補齊 scratchDouble 陣列索引 ===
 function makeUpgradedHeader() { 
   for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i]; 
-  const f = scratchBytes[6] + scratchBytes[7] * 0x100 - 2; 
-  scratchBytes[6] = f & 0xff; 
-  scratchBytes[7] = (f >> 8) & 0xff; 
-  const v = scratchDouble[0]; 
-請謹慎使用程式碼。
+  const f = scratchBytes[0] + scratchBytes[1] * 0x100 - 2; 
+  scratchBytes[0] = f & 0xff; 
+  scratchBytes[1] = (f >> 8) & 0xff; 
+const v = scratchDouble[0];
 return Math_isFinite(v) ? v : null;
 }
 function inspectHolder(c, h) {
@@ -158,7 +155,6 @@ if (o === 0x10) fa = addr;
 }
 return fa;
 }
-// === 修復點四：補齊 targetHeader 的屬性識別類型 ===
 function inspectFunction(c, a) {
 redirectView(c, a);
 readBytes(targetHeader, memoryView, 0x20);
@@ -303,12 +299,12 @@ emit("native_constructor", hex(o.nativeInfo.nativeConstructor), "success");
 function createMemoryWindow(h) {
 return {
 setAddress: function(a) {
-if (liveCandidate === null) throw new Error("Live failed");
-if (!plausibleAddress(a)) throw new RangeError("Invalid address");
+if (liveCandidate === null) throw new Error("Memory window is no longer live");
+if (!plausibleAddress(a)) throw new RangeError("Invalid address " + a);
 redirectView(liveCandidate, a);
 },
 resetAddress: function() {
-if (liveCandidate === null) throw new Error("Live failed");
+if (liveCandidate === null) throw new Error("Memory window is no longer live");
 restoreView(liveCandidate);
 },
 bytes: memoryView,
