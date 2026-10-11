@@ -63,10 +63,10 @@ function usesLegacyWebKit() {
   return /PlayStation 5\/[0-8]\./.test(navigator.userAgent);
 }
 
-// === 第 118 行修復點：硬性加入空格與標準結尾分號，確保舊版 WebKit 順暢解析 ===
+// === 第 117-118 行語法完全修復點：完整還原四重堆疊噴射填充係數陣列 [2, 4, 6, 7] 及其索引運算 ===
 function fillerBigIntCount() {
   if (!usesLegacyWebKit()) return 1;
-  return [ (attemptNumber - 1) % 4 ]; 
+  return [2, 4, 6, 7][(attemptNumber - 1) % 4];
 }
 
 function uint32At(bytes, offset) {
@@ -162,9 +162,9 @@ return vector;
 }
 function makeUpgradedHeader() {
 for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i];
-const flags = scratchBytes[6] + scratchBytes[7] * 0x100 - 2;
-scratchBytes[6] = flags & 0xff;
-scratchBytes[7] = (flags >> 8) & 0xff;
+const flags = scratchBytes[0] + scratchBytes[1] * 0x100 - 2;
+scratchBytes[0] = flags & 0xff;
+scratchBytes[1] = (flags >> 8) & 0xff;
 const value = scratchDouble[0];
 return Number.isFinite(value) ? value : null;
 }
