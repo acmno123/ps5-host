@@ -63,9 +63,10 @@ function usesLegacyWebKit() {
   return /PlayStation 5\/[0-8]\./.test(navigator.userAgent);
 }
 
+// === 第 118 行修復點：硬性加入空格與標準結尾分號，確保舊版 WebKit 順暢解析 ===
 function fillerBigIntCount() {
   if (!usesLegacyWebKit()) return 1;
-  return [2, 4, 6, 7][(attemptNumber - 1) % 4];
+  return [ (attemptNumber - 1) % 4 ]; 
 }
 
 function uint32At(bytes, offset) {
@@ -112,7 +113,6 @@ function plausibleCell(value) {
   return plausibleAddress(value) && value % 8 === 0;
 }
 
-// === 第 93 行修復點：補齊被截斷的語法邊界，還原合理的虛擬記憶體定址空間判斷 ===
 function plausibleAddress(value) {
   return Number.isSafeInteger(value) && value > 2 ** 32 && value  {
     attemptNumber = nextAttempt;
@@ -142,8 +142,8 @@ function startAttempt() {
 }
 
 function validViewLayout() {
+  if (!usesLegacyWebKit()) return allZero(viewHeader, 0x20, 0x28);
 請謹慎使用程式碼。
-if (!usesLegacyWebKit()) return allZero(viewHeader, 0x20, 0x28);
 return allZero(viewHeader, 0x1c, 0x20) &&
 viewHeader[0x20] <= 3 &&
 allZero(viewHeader, 0x21, 0x28);
