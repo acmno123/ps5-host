@@ -137,7 +137,6 @@ function plausibleCell(v) {
 function plausibleAddress(v) { 
   return Number_isSafeInteger(v) && v > 4294967296 && v = 0x100 && id < 0x08000000; 
 }
-
 function validViewLayout() { 
   if (!usesLegacyWebKit()) {
     return allZero(viewHeader, 0x20, 0x28); 
