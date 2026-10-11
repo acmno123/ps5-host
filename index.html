@@ -2,21 +2,17 @@
 <html lang="zh-TW">
 <head>
   <meta charset="utf-8">
-  <!-- 1. 四重前端防快取 meta 標頭，配合 Python 伺服器，徹底阻斷舊記憶體指標快取 -->
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
-  
-  <!-- 2. 視窗設定：防止 PS5 瀏覽器因為誤觸縮放而影響 WebKit 的 Heap Spray（堆疊噴射）佈局 -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   
-  <title>PS5-Relapse-Optimized</title>
+  <title>PS5-Relapse-Robust-Console</title>
   
   <style>
-    /* 3. 視覺與體驗優化：建立專業的漏洞日誌輸出介面，方便觀察 Stage 進度 */
     html, body {
       background: #0a0a0a;
-      color: #00ff66; /* 經典駭客綠，方便閱讀 */
+      color: #00ff66;
       font-family: 'Courier New', Courier, monospace;
       margin: 0;
       padding: 15px;
@@ -29,32 +25,94 @@
     }
     .status-ok { color: #00ff66; }
     .status-info { color: #00bcff; }
-    .status-err { color: #ff3333; }
-    .title { color: #ffffff; font-weight: bold; margin-bottom: 15px; }
+    .status-err { color: #ff3333; font-weight: bold; }
+    .status-warn { color: #ffaa00; }
+    .title { color: #ffffff; font-weight: bold; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 5px; }
   </style>
 </head>
 <body>
-  <div class="title">=== PS5 Relapse 漏洞研究核心加強版控制台 ===</div>
-  <div id="console">[*] 正在初始化 PS5 WebKit 記憶體環境...</div>
+  <div class="title">=== PS5 Relapse 漏洞研究核心加強版控制台 (容錯穩健版) ===</div>
+  <div id="console">[*] 正在監聽系統環境狀態...</div>
 
-  <!-- 
-    4. 核心功能「增強點」：動態快取破壞者 (Cache Buster) 與 嚴格順序控制
-    原版直接用 <script src="...">，PS5 常常會讀取到舊的快取導致堆疊混淆。
-    這裡改用純 JavaScript 動態注入，並在每個檔案後面加上隨機時間戳記（?v=時間），
-    強制 PS5 WebKit 每次重新整理都必須向伺服器拿「全新、乾淨」的編譯代碼。
-  -->
   <script>
     (function() {
-      // 在網頁console中列印日誌的輔助函式
       const logBox = document.getElementById("console");
+      
+      // 統一的日誌控制引擎
       window.log_to_ps5 = function(text, type = 'info') {
         let cls = 'status-info';
         if (type === 'ok') cls = 'status-ok';
         if (type === 'err') cls = 'status-err';
+        if (type === 'warn') cls = 'status-warn';
         logBox.innerHTML += `<div class="${cls}">[${new Date().toLocaleTimeString()}] ${text}</div>`;
+        window.scrollTo(0, document.body.scrollHeight);
       };
 
-      // 需要依序載入的關鍵核心指令碼
+      // 1. 強度優化：建立全域未捕獲異常守衛
+      // 核心修復點：如果觸發了任何 "setup failed" 或者是找不到指標的異常，自動導入重試分流
+      window.onerror = function(message, source, lineno, colno, error) {
+        let errorMsg = message ? message.toString() : "未知錯誤";
+        log_to_ps5(`運行時異常: ${errorMsg} (行: ${lineno})`, "err");
+        
+        // 檢測是否為常見的初始化錯誤 (例如 setup failed / undefined / null 指標)
+        if (errorMsg.toLowerCase().includes("setup") || errorMsg.toLowerCase().includes("fail") || errorMsg.toLowerCase().includes("null")) {
+          window.PS5_SetupEngine.handleSetupFailure("全域運行期捕獲", errorMsg);
+        }
+        return false; 
+      };
+
+      // =========================================================================
+      // 2. 核心內嵌點：PS5 記憶體清理與環境守衛引擎 (原 setup_helper.js 整合)
+      // =========================================================================
+      window.PS5_SetupEngine = {
+        maxAttempts: 3,
+        currentAttempt: 0,
+
+        // 記憶體垃圾回收預平衡 (GC Grooming)，清理上一次當機殘留的垃圾物件
+        groomMemoryPool() {
+          log_to_ps5("[*] 正在執行 WebKit 內存預平衡清理 (GC Grooming)...", "warn");
+          try {
+              let pool = [];
+              for (let i = 0; i < 200; i++) {
+                  pool.push(new Uint32Array(0x1000)); 
+              }
+              pool = null; // 釋放引用，迫使 JavaScriptCore 回收記憶體
+              return true;
+          } catch (e) {
+              return false;
+          }
+        },
+
+        // 當發生 "Setup Failed" 或類似異常時的自動容錯與冷卻重試
+        handleSetupFailure(stageName, errorDetail) {
+          this.currentAttempt++;
+          log_to_ps5(`[!] 檢測到異常失敗點 -> 階段: ${stageName} | 詳情: ${errorDetail}`, "err");
+
+          if (this.currentAttempt < this.maxAttempts) {
+              log_to_ps5(`[*] 觸發自動容錯：正在進行第 ${this.currentAttempt} 次內存自我修復與延時重啟...`, "warn");
+              
+              // 延時 1.5 秒重試，給予 WebKit 充足的時間解構死鎖物件
+              setTimeout(() => {
+                  this.groomMemoryPool();
+                  log_to_ps5("[*] 內存重置完成，強迫重新加載主入口控制鏈...", "info");
+                  
+                  // 重新觸發 site.js 的主入口 (如果已經載入完成)
+                  if (window.trigger_stage1) {
+                      window.trigger_stage1();
+                  } else {
+                      // 如果在加載階段就失敗，重新執行鏈式載入
+                      loadNextScript(0);
+                  }
+              }, 1500);
+          } else {
+              log_to_ps5("[-] 嚴重錯誤：已達連續初始化失敗上限。請手動關閉並重新打開 PS5 瀏覽器以徹底釋放硬體。", "err");
+          }
+        }
+      };
+
+      // =========================================================================
+      // 3. 基礎核心指令碼鏈式加載邏輯
+      // =========================================================================
       const scripts = [
         "./src/firmware.js",
         "./src/main.js",
@@ -62,41 +120,63 @@
         "./src/utils/syscalls.js"
       ];
 
-      const cacheBuster = Date.now(); // 產生目前的時間戳記
+      const cacheBuster = Date.now();
+      const MAX_RETRIES = 2; 
 
-      // 依序同步載入函式，防止 ROP 鏈在 main.js 或 firmware.js 載入完成前就提前觸發而死機
-      function loadNextScript(index) {
+      function loadNextScript(index, retryCount = 0) {
         if (index >= scripts.length) {
-          // 基礎指令碼載入完畢，最後載入 Module 類型的 site.js（主觸發入口）
-          log_to_ps5("核心模組載入完畢，正在注入 Stage 1 模組入口...", "ok");
+          log_to_ps5("基礎核心組件全部就緒，正在注入 Stage 1 模組入口...", "ok");
           const moduleScript = document.createElement("script");
           moduleScript.type = "module";
           moduleScript.src = `./src/site.js?v=${cacheBuster}`;
+          
+          moduleScript.onerror = function() {
+            log_to_ps5("強制性錯誤：無法加載主入口 site.js 模組", "err");
+            window.PS5_SetupEngine.handleSetupFailure("site.js 加載", "HTTP 請求失敗");
+          };
+          
           document.body.appendChild(moduleScript);
           return;
         }
 
         const src = scripts[index];
         const script = document.createElement("script");
-        script.src = `${src}?v=${cacheBuster}`; // 強制刷新快取
+        script.src = `${src}?v=${cacheBuster}`;
         
         script.onload = function() {
-          log_to_ps5(`已成功載入組件: ${src.split('/').pop()}`, "info");
-          loadNextScript(index + 1); // 確保上一個載入成功，才載入下一個
+          log_to_ps5(`已成功解析組件: ${src.split('/').pop()}`, "ok");
+          loadNextScript(index + 1); 
         };
 
         script.onerror = function() {
-          log_to_ps5(`錯誤：無法載入關鍵組件 ${src}`, "err");
+          if (retryCount < MAX_RETRIES) {
+            log_to_ps5(`警告：組件 ${src.split('/').pop()} 加載超時，正在進行第 ${retryCount + 1} 次強制重新獲取...`, "warn");
+            script.remove(); 
+            loadNextScript(index, retryCount + 1); 
+          } else {
+            log_to_ps5(`嚴重錯誤：組件 ${src} 於重試後依然無法就緒，鏈式加載中斷。`, "err");
+            window.PS5_SetupEngine.handleSetupFailure("腳本下載階段", `無法讀取 ${src.split('/').pop()}`);
+          }
         };
 
         document.body.appendChild(script);
       }
 
-      // 開始有順序地執行載入鏈
-      setTimeout(() => {
-        log_to_ps5("正在依序加載 Relapse 核心內存鏈...", "info");
+      // 4. 引入 DOMContentLoaded 狀態確認與記憶體預清理
+      function initialize() {
+        log_to_ps5("DOM 結構渲染完成。正在預清理環境...", "info");
+        window.PS5_SetupEngine.groomMemoryPool(); // 開機前先洗一次堆疊
+        log_to_ps5("依序加載 Relapse 核心內存鏈...", "info");
         loadNextScript(0);
-      }, 500);
+      }
+
+      if (document.readyState === "complete" || document.readyState === "interactive") {
+        setTimeout(initialize, 100);
+      } else {
+        document.addEventListener("DOMContentLoaded", () => {
+          setTimeout(initialize, 100);
+        });
+      }
 
     })();
   </script>
