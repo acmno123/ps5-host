@@ -108,7 +108,6 @@ function sameBytes(l, r, c) {
   return true; 
 }
 
-// === ✨ 終極修復點：完全拉開排版，並百分之百補齊 scratchWords 陣列索引下標 ✨ ===
 function redirectView(c, a) { 
   const h = Math_floor(a / 0x100000000); 
   scratchWords[0] = a - h * 0x100000000; 
@@ -385,7 +384,7 @@ bytes: memoryView,
 size: MEMORY_WINDOW_SIZE,
 leakAddress: h + LEAK_SLOT_OFFSET,
 setLeakObject: function(v) {
-targetHolder.q2 = value;
+targetHolder.q2 = v;
 },
 clearLeakObject: function() {
 targetHolder.q2 = markerObjectA;
