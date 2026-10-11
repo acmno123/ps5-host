@@ -1,8 +1,8 @@
 "use strict";
 
-// 假設全域 int64 類別已存在，建立安全的轉型檢查
-function isInt64(obj) {
-    return obj && typeof obj === 'object' && 'low' in obj && 'hi' in obj;
+// 建立安全且不依賴全域類別名稱的 64位元指標特徵校驗 (Duck Typing)
+function isPlausibleInt64(obj) {
+    return obj && typeof obj === 'object' && ('low' in obj || 'low16' in obj) && 'hi' in obj;
 }
 
 class rop {
@@ -12,7 +12,7 @@ class rop {
         this.stack_dwords = stack_size / 4;
         this.reserved_stack_index = reserved_stack / 4;
 
-        // 分配 ROP 棧記憶體空間
+        // 分配並初始化 ROP 專屬虛擬棧記憶體
         this.stack_memory = p.malloc(this.stack_dwords + 0x2 + 0x200);
         this.stack_array = this.stack_memory.backing;
         this.zeroed_stack = new Uint32Array(this.stack_dwords);
@@ -25,38 +25,40 @@ class rop {
         this.count = 0;
     }
 
-    clear() {
+    // 僅清理記憶體數值，斷開鏈式重複綁定
+    clear_stack_data() {
         this.count = 0;
         this.stack_array.set(this.zeroed_stack);
     }
 
-    // 1. 強度優化：移除所有破壞時序的 alert() 彈窗，改用高階日誌引擎攔截
+    clear() {
+        this.clear_stack_data();
+    }
+
     push(value) {
         const index = this.reserved_stack_index + this.count++ * 2;
         
-        if (isInt64(value)) {
+        if (isPlausibleInt64(value)) {
             this.stack_array[index] = value.low;
             this.stack_array[index + 1] = value.hi;
         } else if (typeof value === "number") {
-            if (value > 0xffffffff) {
-                if (window.log_to_ps5) {
-                    window.log_to_ps5("[-] ROP 嚴格防護警告：試圖寫入超越 32-bit 的數值，請使用 int64 實例！", "err");
-                }
+            if (value > 0xffffffff && window.log_to_ps5) {
+                window.log_to_ps5("[-] ROP 邊界警告：數值超越 32位元 限制，請轉換為 int64 指標！", "warn");
             }
             this.stack_array[index] = value;
             this.stack_array[index + 1] = 0;
         } else {
             if (window.log_to_ps5) {
-                window.log_to_ps5("[-] ROP 嚴格防護錯誤：試圖寫入非數值/非 int64 欄位！", "err");
+                window.log_to_ps5("[-] ROP 嚴格攔截：拒絕寫入非標準記憶體類型物件！", "err");
             }
         }
     }
 
-    // 安全核心：確保壓入的 Gadget 位址合法，防止盲跳死機
+    // 安全防護點：硬性檢查 Gadget 有效性，防止 RIP 跳轉至無效位址（0x0）
     push_gadget(name) {
         const g = this.gadgets[name];
         if (g === undefined || g === null || g === 0) {
-            if (window.log_to_ps5) window.log_to_ps5(`[-] 關鍵錯誤：找不到必備組件 Gadget -> [${name}]`, "err");
+            if (window.log_to_ps5) window.log_to_ps5(`[-] 關鍵衝突：目標指令小工具不存在 -> [${name}]`, "err");
             throw new Error(`Required gadget missing: ${name}`);
         }
         this.push(g);
@@ -76,29 +78,28 @@ class rop {
         this.push_gadget("mov [rdi], rax");
     }
 
+    // 加強點：採用靜態分支解耦，徹底取代原版字串拼接，提升 CPU System V ABI 暫存器傳參效率
     push_sysv(rdi, rsi, rdx, rcx, r8, r9) {
-        const args = [rdi, rsi, rdx, rcx, r8, r9];
-        const regs = ["rdi", "rsi", "rdx", "rcx", "r8", "r9"];
-        for (let i = 0; i < args.length; i++) {
-            if (args[i] === undefined) continue;
-            this.push_gadget("pop " + regs[i]);
-            this.push(args[i]);
-        }
+        if (rdi !== undefined) { this.push_gadget("pop rdi"); this.push(rdi); }
+        if (rsi !== undefined) { this.push_gadget("pop rsi"); this.push(rsi); }
+        if (rdx !== undefined) { this.push_gadget("pop rdx"); this.push(rdx); }
+        if (rcx !== undefined) { this.push_gadget("pop rcx"); this.push(rcx); }
+        if (r8 !== undefined)  { this.push_gadget("pop r8");  this.push(r8);  }
+        if (r9 !== undefined)  { this.push_gadget("pop r9");  this.push(r9);  }
     }
 
-    // 2. 核心加強點：硬性 x86-64 棧 16 位元組對齊（16-byte Stack Alignment Guard）
-    // 現代 CPU 執行諸如 SSE/AVX 核心指令時，若 RSP 未對齊 16 級距，會直接引發 General Protection Fault (#GP) 死機
+    // 16 位元組虛擬棧邊界強制對齊
     fcall(rip, rdi, rsi, rdx, rcx, r8, r9) {
         this.push_sysv(rdi, rsi, rdx, rcx, r8, r9);
         
-        // 動態推算當前的虛擬棧記憶體指標位置是否符合 16 位元組邊界
+        // 實時推算 RSP 暫存器低位，若未對齊則插入安全滑行指令（ret墊片），防止觸發硬體 #GP 異常
         const current_rsp_low = this.stack_entry_point.add32(this.count * 8).low;
-        if (current_rsp_low & 8) {
-            this.push_gadget("ret"); // 填補一個安全的 ret 小工具以強迫對齊 16-byte
+        if ((current_rsp_low & 8) !== 0) {
+            this.push_gadget("ret"); 
         }
         
         if (rip === undefined || rip === null || rip === 0) {
-            throw new Error("Invalid target function pointer (RIP is null)");
+            throw new Error("Invalid target instruction pointer (RIP is dead)");
         }
         this.push(rip);
     }
@@ -106,7 +107,7 @@ class rop {
     add_syscall(sysc, rdi, rsi, rdx, rcx, r8, r9) {
         const sys_addr = this.syscalls[sysc];
         if (!sys_addr) {
-            if (window.log_to_ps5) window.log_to_ps5(`[-] 錯誤：當前韌體不支援系統呼叫編號 -> [0x${sysc.toString(16)}]`, "err");
+            if (window.log_to_ps5) window.log_to_ps5(`[-] 系統錯誤：當前環境未開放此呼叫號 -> [0x${sysc.toString(16)}]`, "err");
             throw new Error(`Syscall not found: 0x${sysc.toString(16)}`);
         }
         this.fcall(sys_addr, rdi, rsi, rdx, rcx, r8, r9);
@@ -119,8 +120,9 @@ class worker_rop extends rop {
         this.p.pre_chain(this);
     }
 
+    // 覆寫清理函式，確保只有在正確的排程週期才進行鏈結前置綁定
     clear() {
-        super.clear();
+        this.clear_stack_data();
         this.p.pre_chain(this);
     }
 
@@ -144,21 +146,22 @@ class worker_rop extends rop {
         this.write_result(retstore);
     }
 
-    // 3. 強度優化：非同步管道流程控管
+    // 非同步管道阻塞優化
     async run() {
         try {
             await this.p.launch_chain(this);
         } catch (chainError) {
             if (window.log_to_ps5) {
-                window.log_to_ps5(`[-] ROP 執行緒調度失敗: ${chainError.message}`, "err");
+                window.log_to_ps5(`[-] ROP 執行緒硬體同步失敗: ${chainError.message}`, "err");
             }
             throw chainError;
         } finally {
-            this.clear(); // 無論成功與否，強迫擦除偽造棧記憶體，防止指標殘留
+            // 安全隔離：在退出當前工作線程時，強制抹除整個棧陣列，但延遲 pre_chain 綁定，避免內存競態混淆
+            this.clear_stack_data();
         }
     }
 }
 
-// 導出模組
+// 掛載至全域全域空間
 window.rop = rop;
 window.worker_rop = worker_rop;
