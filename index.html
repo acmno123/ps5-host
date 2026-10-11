@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="utf-8">
+  <!-- 1. 四重前端防快取 meta 標頭，配合 Python 伺服器，徹底阻斷舊記憶體指標快取 -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  
+  <!-- 2. 視窗設定：防止 PS5 瀏覽器因為誤觸縮放而影響 WebKit 的 Heap Spray（堆疊噴射）佈局 -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  
+  <title>PS5-Relapse-Optimized</title>
+  
+  <style>
+    /* 3. 視覺與體驗優化：建立專業的漏洞日誌輸出介面，方便觀察 Stage 進度 */
+    html, body {
+      background: #0a0a0a;
+      color: #00ff66; /* 經典駭客綠，方便閱讀 */
+      font-family: 'Courier New', Courier, monospace;
+      margin: 0;
+      padding: 15px;
+      overflow-x: hidden;
+    }
+    #console {
+      white-space: pre-wrap;
+      line-height: 1.5;
+      font-size: 14px;
+    }
+    .status-ok { color: #00ff66; }
+    .status-info { color: #00bcff; }
+    .status-err { color: #ff3333; }
+    .title { color: #ffffff; font-weight: bold; margin-bottom: 15px; }
+  </style>
+</head>
+<body>
+  <div class="title">=== PS5 Relapse 漏洞研究核心加強版控制台 ===</div>
+  <div id="console">[*] 正在初始化 PS5 WebKit 記憶體環境...</div>
+
+  <!-- 
+    4. 核心功能「增強點」：動態快取破壞者 (Cache Buster) 與 嚴格順序控制
+    原版直接用 <script src="...">，PS5 常常會讀取到舊的快取導致堆疊混淆。
+    這裡改用純 JavaScript 動態注入，並在每個檔案後面加上隨機時間戳記（?v=時間），
+    強制 PS5 WebKit 每次重新整理都必須向伺服器拿「全新、乾淨」的編譯代碼。
+  -->
+  <script>
+    (function() {
+      // 在網頁console中列印日誌的輔助函式
+      const logBox = document.getElementById("console");
+      window.log_to_ps5 = function(text, type = 'info') {
+        let cls = 'status-info';
+        if (type === 'ok') cls = 'status-ok';
+        if (type === 'err') cls = 'status-err';
+        logBox.innerHTML += `<div class="${cls}">[${new Date().toLocaleTimeString()}] ${text}</div>`;
+      };
+
+      // 需要依序載入的關鍵核心指令碼
+      const scripts = [
+        "./src/firmware.js",
+        "./src/main.js",
+        "./src/rop.js",
+        "./src/utils/syscalls.js"
+      ];
+
+      const cacheBuster = Date.now(); // 產生目前的時間戳記
+
+      // 依序同步載入函式，防止 ROP 鏈在 main.js 或 firmware.js 載入完成前就提前觸發而死機
+      function loadNextScript(index) {
+        if (index >= scripts.length) {
+          // 基礎指令碼載入完畢，最後載入 Module 類型的 site.js（主觸發入口）
+          log_to_ps5("核心模組載入完畢，正在注入 Stage 1 模組入口...", "ok");
+          const moduleScript = document.createElement("script");
+          moduleScript.type = "module";
+          moduleScript.src = `./src/site.js?v=${cacheBuster}`;
+          document.body.appendChild(moduleScript);
+          return;
+        }
+
+        const src = scripts[index];
+        const script = document.createElement("script");
+        script.src = `${src}?v=${cacheBuster}`; // 強制刷新快取
+        
+        script.onload = function() {
+          log_to_ps5(`已成功載入組件: ${src.split('/').pop()}`, "info");
+          loadNextScript(index + 1); // 確保上一個載入成功，才載入下一個
+        };
+
+        script.onerror = function() {
+          log_to_ps5(`錯誤：無法載入關鍵組件 ${src}`, "err");
+        };
+
+        document.body.appendChild(script);
+      }
+
+      // 開始有順序地執行載入鏈
+      setTimeout(() => {
+        log_to_ps5("正在依序加載 Relapse 核心內存鏈...", "info");
+        loadNextScript(0);
+      }, 500);
+
+    })();
+  </script>
+</body>
+</html>
